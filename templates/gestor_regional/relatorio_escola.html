@@ -3,7 +3,10 @@
 {% block page_title %}Relatório de Métricas{% endblock %}
 
 {% block content %}
-<div class="max-w-7xl mx-auto space-y-8">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<div class="max-w-7xl mx-auto space-y-8" id="relatorio-container">
     
     <!-- Header Section -->
     <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex flex-col md:flex-row justify-between items-center gap-6">
@@ -21,23 +24,29 @@
             </p>
         </div>
         
-        <form class="flex flex-col md:flex-row gap-3 bg-gray-50 p-4 rounded-lg border border-gray-100" method="GET">
-            <div class="flex flex-col">
-                <label class="text-xs text-gray-500 mb-1">Data Início</label>
-                <input type="date" name="data_inicio" value="{{ data_inicio }}" class="text-sm border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500">
-            </div>
-            <div class="flex flex-col">
-                <label class="text-xs text-gray-500 mb-1">Data Fim</label>
-                <input type="date" name="data_fim" value="{{ data_fim }}" class="text-sm border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500">
-            </div>
-            <button type="submit" class="self-end bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors shadow-sm h-10 md:mt-auto">
-                Atualizar
+        <div class="flex gap-3 items-end">
+            <form class="flex flex-col md:flex-row gap-3 bg-gray-50 p-4 rounded-lg border border-gray-100" method="GET">
+                <div class="flex flex-col">
+                    <label class="text-xs text-gray-500 mb-1">Data Início</label>
+                    <input type="date" name="data_inicio" value="{{ data_inicio }}" class="text-sm border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500">
+                </div>
+                <div class="flex flex-col">
+                    <label class="text-xs text-gray-500 mb-1">Data Fim</label>
+                    <input type="date" name="data_fim" value="{{ data_fim }}" class="text-sm border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500">
+                </div>
+                <button type="submit" class="self-end bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors shadow-sm h-10 md:mt-auto">
+                    Atualizar
+                </button>
+            </form>
+            <button onclick="exportPDF()" class="bg-gray-800 text-white px-4 py-2 rounded text-sm font-medium hover:bg-gray-900 transition-colors flex items-center gap-2 h-[66px] self-start">
+                <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                Exportar PDF
             </button>
-        </form>
+        </div>
     </div>
 
     <!-- Main Stats -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <!-- Total Reservas -->
         <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center gap-4">
             <div class="p-4 bg-indigo-50 text-indigo-600 rounded-lg flex-shrink-0">
@@ -76,7 +85,7 @@
     <!-- Detailed Lists -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
         
-        <!-- Distribuição de Reservas por Recurso -->
+        <!-- Métricas por Recurso -->
         <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden lg:col-span-2">
             <div class="p-6 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
                 <h3 class="font-bold text-gray-800 flex items-center gap-2">
@@ -85,7 +94,7 @@
             </div>
             <div class="p-6 overflow-x-auto">
                 {% if metricas_recursos %}
-                <table class="min-w-full divide-y divide-gray-200">
+                <table class="min-w-full divide-y divide-gray-200" id="tabela-recursos">
                     <thead>
                         <tr>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Recurso</th>
@@ -138,19 +147,24 @@
             </div>
             <div class="p-6">
                 {% if professores_top %}
-                <ul class="space-y-4">
-                    {% for nome, total in professores_top %}
-                    <li class="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-100 hover:border-orange-200 transition-colors">
-                        <div class="flex items-center gap-3">
-                            <div class="w-8 h-8 rounded-full bg-white text-orange-600 flex items-center justify-center font-bold text-sm shadow-sm border border-gray-100">
-                                {{ loop.index }}
-                            </div>
-                            <span class="font-medium text-gray-800 truncate max-w-[200px]" title="{{ nome }}">{{ nome }}</span>
-                        </div>
-                        <span class="px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-sm font-bold">{{ total }} res.</span>
-                    </li>
-                    {% endfor %}
-                </ul>
+                <table class="min-w-full divide-y divide-gray-200" id="tabela-professores">
+                    <thead>
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">#</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Professor</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Reservas</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for nome, total in professores_top %}
+                        <tr>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ loop.index }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ nome }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-right font-bold text-orange-600">{{ total }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
                 {% else %}
                 <p class="text-center text-gray-500 py-8">Nenhum dado disponível para o período.</p>
                 {% endif %}
@@ -166,14 +180,24 @@
             </div>
             <div class="p-6">
                 {% if disciplinas_stats %}
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {% for nome, total in disciplinas_stats %}
-                    <div class="p-4 bg-gray-50 rounded-lg border border-gray-100 flex justify-between items-center">
-                        <span class="font-medium text-gray-800 truncate pr-2">{{ nome }}</span>
-                        <span class="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-bold">{{ total }}</span>
-                    </div>
-                    {% endfor %}
-                </div>
+                <table class="min-w-full divide-y divide-gray-200" id="tabela-disciplinas">
+                    <thead>
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">#</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Disciplina</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Reservas</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for nome, total in disciplinas_stats %}
+                        <tr>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ loop.index }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ nome }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-right font-bold text-green-600">{{ total }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
                 {% else %}
                 <p class="text-center text-gray-500 py-8">Nenhum dado disponível para o período.</p>
                 {% endif %}
@@ -182,4 +206,169 @@
 
     </div>
 </div>
+
+<script>
+async function exportPDF() {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF('p', 'mm', 'a4');
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const margin = 10;
+    const contentWidth = pageWidth - 2 * margin;
+
+    // Título do relatório
+    doc.setFontSize(18);
+    doc.setTextColor(40, 40, 40);
+    doc.text('Relatório de Métricas - {{ escola.nome }}', margin, margin + 5);
+    
+    doc.setFontSize(10);
+    doc.setTextColor(100, 100, 100);
+    doc.text('Período: {{ data_inicio.strftime("%d/%m/%Y") }} até {{ data_fim.strftime("%d/%m/%Y") }}', margin, margin + 12);
+    
+    doc.setFontSize(8);
+    doc.setTextColor(150, 150, 150);
+    const now = new Date();
+    doc.text(`Gerado em: ${now.toLocaleDateString('pt-BR')} ${now.toLocaleTimeString('pt-BR')}`, margin, margin + 18);
+
+    let yPos = margin + 28;
+
+    // Helper para adicionar tabela no PDF
+    function addTableToPDF(headers, rows, startY) {
+        const rowHeight = 7;
+        const colWidths = [];
+        const totalWidth = contentWidth;
+        
+        // Calcular larguras proporcionais
+        const colCount = headers.length;
+        const baseWidth = totalWidth / colCount;
+        
+        // Primeira coluna maior (nomes)
+        colWidths.push(baseWidth * 1.5);
+        const remainingWidth = totalWidth - colWidths[0];
+        const otherColWidth = remainingWidth / (colCount - 1);
+        for (let i = 1; i < colCount; i++) {
+            colWidths.push(otherColWidth);
+        }
+
+        // Cabeçalho
+        doc.setFillColor(79, 70, 229);
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(8);
+        doc.setFont(undefined, 'bold');
+        
+        let xPos = margin;
+        headers.forEach((header, i) => {
+            doc.rect(xPos, startY, colWidths[i], rowHeight, 'F');
+            doc.text(header, xPos + 2, startY + 5);
+            xPos += colWidths[i];
+        });
+
+        // Linhas
+        doc.setTextColor(40, 40, 40);
+        doc.setFont(undefined, 'normal');
+        doc.setFontSize(7);
+        
+        let currentY = startY + rowHeight;
+        rows.forEach((row, rowIndex) => {
+            // Verificar se precisa de nova página
+            if (currentY + rowHeight > pageHeight - margin) {
+                doc.addPage();
+                currentY = margin + 5;
+                
+                // Redesenhar cabeçalho
+                doc.setFillColor(79, 70, 229);
+                doc.setTextColor(255, 255, 255);
+                doc.setFont(undefined, 'bold');
+                xPos = margin;
+                headers.forEach((header, i) => {
+                    doc.rect(xPos, currentY, colWidths[i], rowHeight, 'F');
+                    doc.text(header, xPos + 2, currentY + 5);
+                    xPos += colWidths[i];
+                });
+                currentY += rowHeight;
+                doc.setTextColor(40, 40, 40);
+                doc.setFont(undefined, 'normal');
+            }
+
+            // Fundo zebrado
+            if (rowIndex % 2 === 0) {
+                doc.setFillColor(245, 245, 250);
+                xPos = margin;
+                headers.forEach((_, i) => {
+                    doc.rect(xPos, currentY, colWidths[i], rowHeight, 'F');
+                    xPos += colWidths[i];
+                });
+            }
+
+            xPos = margin;
+            row.forEach((cell, i) => {
+                const align = i === 0 ? 'left' : 'right';
+                const textX = align === 'left' ? xPos + 2 : xPos + colWidths[i] - 2;
+                doc.text(String(cell), textX, currentY + 5, { align: align });
+                xPos += colWidths[i];
+            });
+            currentY += rowHeight;
+        });
+
+        return currentY;
+    }
+
+    // 1. Tabela de Métricas por Recurso
+    doc.setFontSize(12);
+    doc.setTextColor(40, 40, 40);
+    doc.setFont(undefined, 'bold');
+    doc.text('Métricas por Recurso', margin, yPos);
+    yPos += 6;
+
+    const recursoHeaders = ['Recurso', 'Total Solicitado', 'Concretizadas', 'Aproveitamento', 'Possib.', '% Agend.'];
+    const recursoRows = [
+        {% for r in metricas_recursos %}
+        ['{{ r.nome }}', '{{ r.total_solicitado }}', '{{ r.concretizadas }}', '{{ r.aproveitamento }}%', '{{ r.possibilidade_agendamento }}', '{{ r.pct_agendamento }}%'],
+        {% endfor %}
+    ];
+    yPos = addTableToPDF(recursoHeaders, recursoRows, yPos);
+    yPos += 8;
+
+    // 2. Tabela de Professores
+    if (yPos + 30 > pageHeight - margin) {
+        doc.addPage();
+        yPos = margin + 5;
+    }
+    doc.setFontSize(12);
+    doc.setTextColor(40, 40, 40);
+    doc.setFont(undefined, 'bold');
+    doc.text('Professores Mais Ativos', margin, yPos);
+    yPos += 6;
+
+    const profHeaders = ['Professor', 'Reservas'];
+    const profRows = [
+        {% for nome, total in professores_top %}
+        ['{{ nome }}', '{{ total }}'],
+        {% endfor %}
+    ];
+    yPos = addTableToPDF(profHeaders, profRows, yPos);
+    yPos += 8;
+
+    // 3. Tabela de Disciplinas
+    if (yPos + 30 > pageHeight - margin) {
+        doc.addPage();
+        yPos = margin + 5;
+    }
+    doc.setFontSize(12);
+    doc.setTextColor(40, 40, 40);
+    doc.setFont(undefined, 'bold');
+    doc.text('Disciplinas com Mais Reservas', margin, yPos);
+    yPos += 6;
+
+    const discHeaders = ['Disciplina', 'Reservas'];
+    const discRows = [
+        {% for nome, total in disciplinas_stats %}
+        ['{{ nome }}', '{{ total }}'],
+        {% endfor %}
+    ];
+    addTableToPDF(discHeaders, discRows, yPos);
+
+    doc.save('relatorio_{{ escola.nome|replace(" ", "_") }}.pdf');
+}
+</script>
 {% endblock %}
