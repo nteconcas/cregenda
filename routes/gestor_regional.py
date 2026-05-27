@@ -318,6 +318,12 @@ def relatorio_escola(id):
         Reserva.status.notin_(['cancelada', 'nao_realizada'])
     ).group_by(Usuario.id).order_by(func.count(Reserva.id).desc()).limit(5).all()
     
+    # Calcular % de cada professor em relação ao total de reservas válidas
+    professores_top_com_pct = []
+    for nome, total in professores_top:
+        pct = round((total / total_reservas * 100), 1) if total_reservas > 0 else 0
+        professores_top_com_pct.append((nome, total, pct))
+    
     # Disciplinas/Temáticas Mais Solicitadas (Apenas Confirmadas)
     disciplinas_stats = db.session.query(
         Disciplina.nome, func.count(Reserva.id).label('total')
@@ -345,7 +351,7 @@ def relatorio_escola(id):
                            reservas_por_status=reservas_por_status,
                            metricas_recursos=metricas_recursos,
                            capacidade_por_recurso=capacidade_por_recurso,
-                           professores_top=professores_top,
+                           professores_top=professores_top_com_pct,
                            disciplinas_stats=disciplinas_stats_com_pct,
                            usuario=current_user)
 

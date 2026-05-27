@@ -136,16 +136,18 @@
                         <tr class="bg-gray-50 border-b">
                             <th class="text-left p-3 font-semibold text-gray-600">Professor</th>
                             <th class="text-right p-3 font-semibold text-gray-600">Reservas</th>
+                            <th class="text-right p-3 font-semibold text-gray-600">%</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {% for nome, qtd in top_professores %}
+                        {% for nome, qtd, pct in top_professores %}
                         <tr class="border-b last:border-0 hover:bg-gray-50">
                             <td class="p-3 truncate max-w-[200px]" title="{{ nome }}">{{ nome }}</td>
                             <td class="text-right p-3 font-mono font-bold text-primary">{{ qtd }}</td>
+                            <td class="text-right p-3 font-mono text-gray-600">{{ pct }}%</td>
                         </tr>
                         {% else %}
-                        <tr><td colspan="2" class="p-4 text-center text-gray-500 italic">Sem dados no período</td></tr>
+                        <tr><td colspan="3" class="p-4 text-center text-gray-500 italic">Sem dados no período</td></tr>
                         {% endfor %}
                     </tbody>
                 </table>
@@ -163,16 +165,18 @@
                         <tr class="bg-gray-50 border-b">
                             <th class="text-left p-3 font-semibold text-gray-600">Turma</th>
                             <th class="text-right p-3 font-semibold text-gray-600">Reservas</th>
+                            <th class="text-right p-3 font-semibold text-gray-600">%</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {% for nome, qtd in top_turmas %}
+                        {% for nome, qtd, pct in top_turmas %}
                         <tr class="border-b last:border-0 hover:bg-gray-50">
                             <td class="p-3 truncate max-w-[200px]" title="{{ nome }}">{{ nome }}</td>
                             <td class="text-right p-3 font-mono font-bold text-indigo-600">{{ qtd }}</td>
+                            <td class="text-right p-3 font-mono text-gray-600">{{ pct }}%</td>
                         </tr>
                         {% else %}
-                        <tr><td colspan="2" class="p-4 text-center text-gray-500 italic">Sem dados no período</td></tr>
+                        <tr><td colspan="3" class="p-4 text-center text-gray-500 italic">Sem dados no período</td></tr>
                         {% endfor %}
                     </tbody>
                 </table>
@@ -342,10 +346,10 @@
         doc.text('Top 10 Professores', margin, yPos);
         yPos += 6;
 
-        const profHeaders = ['Professor', 'Reservas'];
+        const profHeaders = ['Professor', 'Reservas', '%'];
         const profRows = [
-            {% for nome, qtd in top_professores %}
-            ['{{ nome }}', '{{ qtd }}'],
+            {% for nome, qtd, pct in top_professores %}
+            ['{{ nome }}', '{{ qtd }}', '{{ pct }}%'],
             {% endfor %}
         ];
         yPos = addTableToPDF(profHeaders, profRows, yPos);
@@ -362,10 +366,10 @@
         doc.text('Top 10 Turmas', margin, yPos);
         yPos += 6;
 
-        const turmaHeaders = ['Turma', 'Reservas'];
+        const turmaHeaders = ['Turma', 'Reservas', '%'];
         const turmaRows = [
-            {% for nome, qtd in top_turmas %}
-            ['{{ nome }}', '{{ qtd }}'],
+            {% for nome, qtd, pct in top_turmas %}
+            ['{{ nome }}', '{{ qtd }}', '{{ pct }}%'],
             {% endfor %}
         ];
         addTableToPDF(turmaHeaders, turmaRows, yPos);

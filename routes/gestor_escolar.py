@@ -1022,10 +1022,23 @@ def metricas():
         Usuario.nome, func.count(Reserva.id)
     ).group_by(Usuario.nome).order_by(desc(func.count(Reserva.id))).limit(10).all()
     
+    # Calcular % de cada professor em relação ao total de reservas válidas
+    total_reservas_validas = realizadas
+    top_professores_com_pct = []
+    for nome, total in top_professores:
+        pct = round((total / total_reservas_validas * 100), 1) if total_reservas_validas > 0 else 0
+        top_professores_com_pct.append((nome, total, pct))
+    
     # 6. Top 10 Turmas
     top_turmas = query_base.join(Turma).with_entities(
         Turma.nome, func.count(Reserva.id)
     ).group_by(Turma.nome).order_by(desc(func.count(Reserva.id))).limit(10).all()
+    
+    # Calcular % de cada turma em relação ao total de reservas válidas
+    top_turmas_com_pct = []
+    for nome, total in top_turmas:
+        pct = round((total / total_reservas_validas * 100), 1) if total_reservas_validas > 0 else 0
+        top_turmas_com_pct.append((nome, total, pct))
     
     return render_template('gestor_escolar/metricas.html',
                            usuario=current_user,
@@ -1037,5 +1050,5 @@ def metricas():
                            realizadas=realizadas,
                            nao_realizadas=nao_realizadas,
                            canceladas=canceladas,
-                           top_professores=top_professores,
-                           top_turmas=top_turmas)
+                           top_professores=top_professores_com_pct,
+                           top_turmas=top_turmas_com_pct)
