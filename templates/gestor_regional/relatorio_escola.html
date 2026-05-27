@@ -46,7 +46,7 @@
     </div>
 
     <!-- Main Stats -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <!-- Total Reservas -->
         <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center gap-4">
             <div class="p-4 bg-indigo-50 text-indigo-600 rounded-lg flex-shrink-0">
@@ -77,6 +77,17 @@
             <div class="flex-1 min-w-0">
                 <p class="text-sm font-medium text-gray-500 uppercase truncate" title="Não Concretizadas">Não Concretizadas</p>
                 <h3 class="text-3xl font-bold text-gray-900 truncate" title="{{ total_nao_realizadas }}">{{ total_nao_realizadas }}</h3>
+            </div>
+        </div>
+
+        <!-- Capacidade por Recurso -->
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center gap-4">
+            <div class="p-4 bg-indigo-50 text-indigo-600 rounded-lg flex-shrink-0">
+                <i class="fas fa-layer-group text-2xl"></i>
+            </div>
+            <div class="flex-1 min-w-0">
+                <p class="text-sm font-medium text-gray-500 uppercase truncate" title="Capacidade por Recurso">Capacidade por Recurso</p>
+                <h3 class="text-3xl font-bold text-gray-900 truncate" title="{{ capacidade_por_recurso }}">{{ capacidade_por_recurso }}</h3>
             </div>
         </div>
 

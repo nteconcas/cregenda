@@ -1014,6 +1014,9 @@ def metricas():
     total_possiveis = (total_slots_periodo * num_recursos) - num_bloqueios
     if total_possiveis < 0: total_possiveis = 0
     
+    # Capacidade por recurso (total_possiveis dividido pela quantidade de recursos)
+    capacidade_por_recurso = round(total_possiveis / num_recursos, 1) if num_recursos > 0 else 0
+    
     # 5. Top 10 Professores
     top_professores = query_base.join(Usuario).with_entities(
         Usuario.nome, func.count(Reserva.id)
@@ -1030,6 +1033,7 @@ def metricas():
                            data_fim=data_fim,
                            metricas_recursos=metricas_recursos,
                            total_possiveis=total_possiveis,
+                           capacidade_por_recurso=capacidade_por_recurso,
                            realizadas=realizadas,
                            nao_realizadas=nao_realizadas,
                            canceladas=canceladas,

@@ -303,6 +303,9 @@ def relatorio_escola(id):
     # Ordenar por total solicitado (decrescente)
     metricas_recursos.sort(key=lambda r: r['total_solicitado'], reverse=True)
 
+    # Capacidade por recurso (total_slots_periodo dividido pela quantidade de recursos)
+    num_recursos = len(recursos)
+    capacidade_por_recurso = round(total_slots_periodo / num_recursos, 1) if num_recursos > 0 else 0
     
     # Professores Mais Ativos
     professores_top = db.session.query(
@@ -335,6 +338,7 @@ def relatorio_escola(id):
                            total_nao_realizadas=total_nao_realizadas,
                            reservas_por_status=reservas_por_status,
                            metricas_recursos=metricas_recursos,
+                           capacidade_por_recurso=capacidade_por_recurso,
                            professores_top=professores_top,
                            disciplinas_stats=disciplinas_stats,
                            usuario=current_user)

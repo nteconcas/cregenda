@@ -39,7 +39,7 @@
     </div>
 
     <!-- Resumo Cards -->
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+    <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
         <div class="bg-white p-4 rounded-lg shadow border-l-4 border-blue-500">
             <div class="text-xs font-bold text-gray-500 uppercase">Total Realizadas</div>
             <div class="text-2xl font-bold text-gray-800">{{ realizadas }}</div>
@@ -55,6 +55,10 @@
         <div class="bg-white p-4 rounded-lg shadow border-l-4 border-gray-300">
             <div class="text-xs font-bold text-gray-500 uppercase">Capacidade Total (Período)</div>
             <div class="text-2xl font-bold text-gray-800">{{ total_possiveis }}</div>
+        </div>
+        <div class="bg-white p-4 rounded-lg shadow border-l-4 border-indigo-500">
+            <div class="text-xs font-bold text-gray-500 uppercase">Capacidade por Recurso</div>
+            <div class="text-2xl font-bold text-gray-800">{{ capacidade_por_recurso }}</div>
         </div>
     </div>
 
@@ -208,108 +212,163 @@
     // --- PDF Export ---
     async function exportPDF() {
         const { jsPDF } = window.jspdf;
-        const doc = new jsPDF('l', 'mm', 'a4'); // Landscape
-
-        // Configurações de Layout Otimizado para Tamanho Máximo
+        const doc = new jsPDF('p', 'mm', 'a4');
         const pageWidth = doc.internal.pageSize.getWidth();
         const pageHeight = doc.internal.pageSize.getHeight();
-        const margin = 5; // Margem mínima
-        
-        // Helper para adicionar página
-        function addMetricPage(title, canvasId, dataLines) {
-            // 1. Título (Discreto no topo)
-            doc.setFontSize(14);
-            doc.setTextColor(40, 40, 40);
-            doc.text(title, margin, margin + 5);
-            
-            // 2. Gráfico (Maximizando a área)
-            const canvas = document.getElementById(canvasId);
-            if (canvas) {
-                const tempCanvas = document.createElement('canvas');
-                const scale = 3; 
-                tempCanvas.width = canvas.width * scale;
-                tempCanvas.height = canvas.height * scale;
-                const ctx = tempCanvas.getContext('2d');
-                ctx.scale(scale, scale);
-                ctx.fillStyle = '#FFFFFF';
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-                ctx.drawImage(canvas, 0, 0);
-                
-                const imgData = tempCanvas.toDataURL('image/jpeg', 1.0);
-                
-                // Área disponível: Topo logo abaixo do título, até o rodapé mínimo
-                const startY = margin + 8;
-                const availableHeight = pageHeight - startY - 10; // Deixa 10mm no rodapé
-                const availableWidth = pageWidth - (margin * 2);
-                
-                // Calcular dimensões para caber na área, mantendo proporção
-                // Como queremos "aumentar ainda mais", vamos forçar o uso da altura disponível
-                // (Geralmente em landscape a altura é o limitante para gráficos quadrados/circulares)
-                let finalHeight = availableHeight;
-                let finalWidth = (canvas.width / canvas.height) * finalHeight;
-                
-                // Se por acaso ficar mais largo que a página (raro em landscape para gráficos normais), ajusta
-                if (finalWidth > availableWidth) {
-                    finalWidth = availableWidth;
-                    finalHeight = (canvas.height / canvas.width) * finalWidth;
-                }
+        const margin = 10;
+        const contentWidth = pageWidth - 2 * margin;
 
-                // Centralizar na página
-                const xPos = (pageWidth - finalWidth) / 2;
-                
-                doc.addImage(imgData, 'JPEG', xPos, startY, finalWidth, finalHeight);
+        // Título do relatório
+        doc.setFontSize(18);
+        doc.setTextColor(40, 40, 40);
+        doc.text('Relatório de Métricas', margin, margin + 5);
+        
+        doc.setFontSize(10);
+        doc.setTextColor(100, 100, 100);
+        doc.text('Período: {{ data_inicio.strftime("%d/%m/%Y") }} até {{ data_fim.strftime("%d/%m/%Y") }}', margin, margin + 12);
+        
+        doc.setFontSize(8);
+        doc.setTextColor(150, 150, 150);
+        const now = new Date();
+        doc.text(`Gerado em: ${now.toLocaleDateString('pt-BR')} ${now.toLocaleTimeString('pt-BR')}`, margin, margin + 18);
+
+        let yPos = margin + 28;
+
+        // Helper para adicionar tabela no PDF
+        function addTableToPDF(headers, rows, startY) {
+            const rowHeight = 7;
+            const colWidths = [];
+            const totalWidth = contentWidth;
+            
+            // Calcular larguras proporcionais
+            const colCount = headers.length;
+            const baseWidth = totalWidth / colCount;
+            
+            // Primeira coluna maior (nomes)
+            colWidths.push(baseWidth * 1.5);
+            const remainingWidth = totalWidth - colWidths[0];
+            const otherColWidth = remainingWidth / (colCount - 1);
+            for (let i = 1; i < colCount; i++) {
+                colWidths.push(otherColWidth);
             }
 
-            // 3. Dados Numéricos (Sobreposto no canto inferior direito ou lateral)
-            // Para garantir que não tape o gráfico, colocamos no canto extremo
-            // Gráficos redondos (Pie/Doughnut) deixam os cantos livres.
+            // Cabeçalho
+            doc.setFillColor(79, 70, 229);
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(8);
+            doc.setFont(undefined, 'bold');
             
-            doc.setFontSize(11);
-            doc.setTextColor(0, 0, 0);
-            
-            // Posição base: canto inferior direito, com margem
-            const dataBlockRightX = pageWidth - margin - 5;
-            const dataBlockBottomY = pageHeight - margin - 8; // Acima do footer
-            
-            let yPos = dataBlockBottomY - (dataLines.length * 5); 
-            
-            // Fundo semi-transparente para leitura (opcional, mas bom se sobrepor)
-            // Mas como é PDF, desenhar um retangulo branco atrás do texto ajuda
-            // Vamos desenhar um box branco atrás dos dados para garantir leitura
-            const textBlockHeight = (dataLines.length * 5) + 4;
-            const maxLineWidth = 80; // Estimetiva
-            // doc.setFillColor(255, 255, 255);
-            // doc.rect(dataBlockRightX - maxLineWidth, yPos - 4, maxLineWidth, textBlockHeight, 'F');
-
-            dataLines.forEach(line => {
-                if (line.startsWith('##')) {
-                    doc.setFont(undefined, 'bold');
-                    doc.text(line.replace('##', ''), dataBlockRightX, yPos, { align: 'right' });
-                    doc.setFont(undefined, 'normal');
-                } else if (line.trim() !== '') {
-                    doc.text(line, dataBlockRightX, yPos, { align: 'right' });
-                }
-                yPos += 5;
+            let xPos = margin;
+            headers.forEach((header, i) => {
+                doc.rect(xPos, startY, colWidths[i], rowHeight, 'F');
+                doc.text(header, xPos + 2, startY + 5);
+                xPos += colWidths[i];
             });
 
-            // 4. Footer discreto
+            // Linhas
+            doc.setTextColor(40, 40, 40);
+            doc.setFont(undefined, 'normal');
             doc.setFontSize(7);
-            doc.setTextColor(150, 150, 150);
-            const now = new Date();
-            const footerText = `Agenda EduLabTech - ${now.toLocaleDateString('pt-BR')} ${now.toLocaleTimeString('pt-BR')}`;
-            doc.text(footerText, margin, pageHeight - margin);
+            
+            let currentY = startY + rowHeight;
+            rows.forEach((row, rowIndex) => {
+                // Verificar se precisa de nova página
+                if (currentY + rowHeight > pageHeight - margin) {
+                    doc.addPage();
+                    currentY = margin + 5;
+                    
+                    // Redesenhar cabeçalho
+                    doc.setFillColor(79, 70, 229);
+                    doc.setTextColor(255, 255, 255);
+                    doc.setFont(undefined, 'bold');
+                    xPos = margin;
+                    headers.forEach((header, i) => {
+                        doc.rect(xPos, currentY, colWidths[i], rowHeight, 'F');
+                        doc.text(header, xPos + 2, currentY + 5);
+                        xPos += colWidths[i];
+                    });
+                    currentY += rowHeight;
+                    doc.setTextColor(40, 40, 40);
+                    doc.setFont(undefined, 'normal');
+                }
+
+                // Fundo zebrado
+                if (rowIndex % 2 === 0) {
+                    doc.setFillColor(245, 245, 250);
+                    xPos = margin;
+                    headers.forEach((_, i) => {
+                        doc.rect(xPos, currentY, colWidths[i], rowHeight, 'F');
+                        xPos += colWidths[i];
+                    });
+                }
+
+                xPos = margin;
+                row.forEach((cell, i) => {
+                    const align = i === 0 ? 'left' : 'right';
+                    const textX = align === 'left' ? xPos + 2 : xPos + colWidths[i] - 2;
+                    doc.text(String(cell), textX, currentY + 5, { align: align });
+                    xPos += colWidths[i];
+                });
+                currentY += rowHeight;
+            });
+
+            return currentY;
         }
 
-        // 1. Página: Status das Reservas
-        doc.addPage();
-        const statusDataLines = [
-            `Realizadas: ${stats.realizadas}`,
-            `Não Concretizadas: ${stats.nao_realizadas}`,
-            `Canceladas: ${stats.canceladas}`,
-            '',
-            `##Total de Reservas: ${stats.realizadas + stats.nao_realizadas + stats.canceladas}`
+        // 1. Tabela de Métricas por Recurso
+        doc.setFontSize(12);
+        doc.setTextColor(40, 40, 40);
+        doc.setFont(undefined, 'bold');
+        doc.text('Métricas por Recurso', margin, yPos);
+        yPos += 6;
+
+        const recursoHeaders = ['Recurso', 'Total Solicitado', 'Concretizadas', 'Aproveitamento', 'Possib.', '% Agend.'];
+        const recursoRows = [
+            {% for r in metricas_recursos %}
+            ['{{ r.nome }}', '{{ r.total_solicitado }}', '{{ r.concretizadas }}', '{{ r.aproveitamento }}%', '{{ r.possibilidade_agendamento }}', '{{ r.pct_agendamento }}%'],
+            {% endfor %}
         ];
-        addMetricPage('Status das Reservas', 'chartStatus', statusDataLines);
+        yPos = addTableToPDF(recursoHeaders, recursoRows, yPos);
+        yPos += 8;
+
+        // 2. Tabela de Professores
+        if (yPos + 30 > pageHeight - margin) {
+            doc.addPage();
+            yPos = margin + 5;
+        }
+        doc.setFontSize(12);
+        doc.setTextColor(40, 40, 40);
+        doc.setFont(undefined, 'bold');
+        doc.text('Top 10 Professores', margin, yPos);
+        yPos += 6;
+
+        const profHeaders = ['Professor', 'Reservas'];
+        const profRows = [
+            {% for nome, qtd in top_professores %}
+            ['{{ nome }}', '{{ qtd }}'],
+            {% endfor %}
+        ];
+        yPos = addTableToPDF(profHeaders, profRows, yPos);
+        yPos += 8;
+
+        // 3. Tabela de Turmas
+        if (yPos + 30 > pageHeight - margin) {
+            doc.addPage();
+            yPos = margin + 5;
+        }
+        doc.setFontSize(12);
+        doc.setTextColor(40, 40, 40);
+        doc.setFont(undefined, 'bold');
+        doc.text('Top 10 Turmas', margin, yPos);
+        yPos += 6;
+
+        const turmaHeaders = ['Turma', 'Reservas'];
+        const turmaRows = [
+            {% for nome, qtd in top_turmas %}
+            ['{{ nome }}', '{{ qtd }}'],
+            {% endfor %}
+        ];
+        addTableToPDF(turmaHeaders, turmaRows, yPos);
 
         doc.save('relatorio_metricas.pdf');
     }
