@@ -96,11 +96,11 @@
         <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden lg:col-span-2">
             <div class="p-6 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
                 <h3 class="font-bold text-gray-800 flex items-center gap-2">
-                    <i class="fas fa-cubes text-indigo-500"></i> Distribuição de Reservas por Recurso
+                    <i class="fas fa-cubes text-indigo-500"></i> Métricas por Recurso
                 </h3>
             </div>
             <div class="p-6 overflow-x-auto">
-                {% if recursos_stats %}
+                {% if metricas_recursos %}
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead>
                         <tr>
@@ -108,20 +108,32 @@
                             <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Total Solicitado</th>
                             <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Concretizadas</th>
                             <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Aproveitamento</th>
+                            <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Possib. Agendamento</th>
+                            <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">% Agendamento</th>
                         </tr>
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-200">
-                        {% for nome, solicitado, concretizado in recursos_stats %}
+                        {% for r in metricas_recursos %}
                         <tr>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ nome }}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">{{ solicitado }}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-green-600 font-bold text-center">{{ concretizado }}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
-                                {% if solicitado > 0 %}
-                                    {{ ((concretizado / solicitado) * 100)|round|int }}%
-                                {% else %}
-                                    0%
-                                {% endif %}
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ r.nome }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">{{ r.total_solicitado }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-green-600 font-bold text-center">{{ r.concretizadas }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-center">
+                                <span class="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold
+                                    {% if r.aproveitamento >= 80 %}bg-green-100 text-green-700
+                                    {% elif r.aproveitamento >= 50 %}bg-yellow-100 text-yellow-700
+                                    {% else %}bg-red-100 text-red-700{% endif %}">
+                                    {{ r.aproveitamento }}%
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">{{ r.possibilidade_agendamento }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-center">
+                                <span class="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold
+                                    {% if r.pct_agendamento >= 80 %}bg-green-100 text-green-700
+                                    {% elif r.pct_agendamento >= 50 %}bg-yellow-100 text-yellow-700
+                                    {% else %}bg-red-100 text-red-700{% endif %}">
+                                    {{ r.pct_agendamento }}%
+                                </span>
                             </td>
                         </tr>
                         {% endfor %}

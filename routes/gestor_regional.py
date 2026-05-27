@@ -243,16 +243,66 @@ def relatorio_escola(id):
         Reserva.data <= data_fim
     ).group_by(Reserva.status).all()
     
-    # Recursos - Distribuição (Solicitados vs Concretizados)
-    recursos_stats = db.session.query(
-        Recurso.nome, 
-        func.count(Reserva.id).label('total_solicitado'),
-        func.sum(case((Reserva.status.notin_(['cancelada', 'nao_realizada']), 1), else_=0)).label('total_concretizado')
-    ).join(Reserva).filter(
-        Recurso.escola_id == id,
-        Reserva.data >= data_inicio,
-        Reserva.data <= data_fim
-    ).group_by(Recurso.id).order_by(func.count(Reserva.id).desc()).all()
+    # Recursos - Distribuição (Solicitados vs Concretizados + Possibilidade + % Agendamento)
+    recursos = Recurso.query.filter_by(escola_id=id).all()
+    
+    # Calcular total de slots disponíveis por recurso no período
+    blocos = BlocoAula.query.filter_by(escola_id=id).all()
+    blocos_por_dia = {}
+    for b in blocos:
+        blocos_por_dia[b.dia_semana] = blocos_por_dia.get(b.dia_semana, 0) + 1
+    
+    total_slots_periodo = 0
+    curr = data_inicio
+    while curr <= data_fim:
+        total_slots_periodo += blocos_por_dia.get(curr.weekday(), 0)
+        curr += timedelta(days=1)
+    
+    metricas_recursos = []
+    for recurso in recursos:
+        # Total Solicitado
+        total_solicitado = Reserva.query.filter(
+            Reserva.recurso_id == recurso.id,
+            Reserva.data >= data_inicio,
+            Reserva.data <= data_fim
+        ).count()
+        
+        # Concretizadas (confirmadas)
+        concretizadas = Reserva.query.filter(
+            Reserva.recurso_id == recurso.id,
+            Reserva.data >= data_inicio,
+            Reserva.data <= data_fim,
+            Reserva.status == 'confirmada'
+        ).count()
+        
+        # Aproveitamento
+        aproveitamento = round((concretizadas / total_solicitado * 100), 1) if total_solicitado > 0 else 0
+        
+        # Possibilidade de agendamento
+        num_bloqueios_recurso = Bloqueio.query.filter(
+            Bloqueio.recurso_id == recurso.id,
+            Bloqueio.data >= data_inicio,
+            Bloqueio.data <= data_fim
+        ).count()
+        possibilidade_agendamento = total_slots_periodo - num_bloqueios_recurso
+        if possibilidade_agendamento < 0:
+            possibilidade_agendamento = 0
+        
+        # % de agendamento
+        pct_agendamento = round((concretizadas / possibilidade_agendamento * 100), 1) if possibilidade_agendamento > 0 else 0
+        
+        metricas_recursos.append({
+            'nome': recurso.nome,
+            'total_solicitado': total_solicitado,
+            'concretizadas': concretizadas,
+            'aproveitamento': aproveitamento,
+            'possibilidade_agendamento': possibilidade_agendamento,
+            'pct_agendamento': pct_agendamento
+        })
+    
+    # Ordenar por total solicitado (decrescente)
+    metricas_recursos.sort(key=lambda r: r['total_solicitado'], reverse=True)
+
     
     # Professores Mais Ativos
     professores_top = db.session.query(
@@ -284,7 +334,7 @@ def relatorio_escola(id):
                            total_geral=total_geral,
                            total_nao_realizadas=total_nao_realizadas,
                            reservas_por_status=reservas_por_status,
-                           recursos_stats=recursos_stats,
+                           metricas_recursos=metricas_recursos,
                            professores_top=professores_top,
                            disciplinas_stats=disciplinas_stats,
                            usuario=current_user)
