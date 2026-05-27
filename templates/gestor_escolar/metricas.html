@@ -58,16 +58,57 @@
         </div>
     </div>
 
+    <!-- Tabela de Métricas por Recurso -->
+    <div class="bg-white p-6 rounded-lg shadow">
+        <h3 class="font-bold text-lg mb-4 text-gray-800 flex items-center gap-2">
+            📊 Métricas por Recurso
+        </h3>
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="bg-gray-50 border-b">
+                        <th class="text-left p-3 font-semibold text-gray-600">Recurso</th>
+                        <th class="text-center p-3 font-semibold text-gray-600">Total Solicitado</th>
+                        <th class="text-center p-3 font-semibold text-gray-600">Concretizadas</th>
+                        <th class="text-center p-3 font-semibold text-gray-600">Aproveitamento</th>
+                        <th class="text-center p-3 font-semibold text-gray-600">Possib. Agendamento</th>
+                        <th class="text-center p-3 font-semibold text-gray-600">% Agendamento</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for r in metricas_recursos %}
+                    <tr class="border-b last:border-0 hover:bg-gray-50">
+                        <td class="p-3 font-medium text-gray-800">{{ r.nome }}</td>
+                        <td class="text-center p-3 font-mono">{{ r.total_solicitado }}</td>
+                        <td class="text-center p-3 font-mono text-green-600 font-bold">{{ r.concretizadas }}</td>
+                        <td class="text-center p-3">
+                            <span class="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold
+                                {% if r.aproveitamento >= 80 %}bg-green-100 text-green-700
+                                {% elif r.aproveitamento >= 50 %}bg-yellow-100 text-yellow-700
+                                {% else %}bg-red-100 text-red-700{% endif %}">
+                                {{ r.aproveitamento }}%
+                            </span>
+                        </td>
+                        <td class="text-center p-3 font-mono">{{ r.possibilidade_agendamento }}</td>
+                        <td class="text-center p-3">
+                            <span class="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold
+                                {% if r.pct_agendamento >= 80 %}bg-green-100 text-green-700
+                                {% elif r.pct_agendamento >= 50 %}bg-yellow-100 text-yellow-700
+                                {% else %}bg-red-100 text-red-700{% endif %}">
+                                {{ r.pct_agendamento }}%
+                            </span>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="6" class="p-4 text-center text-gray-500 italic">Nenhum recurso cadastrado</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
     <!-- Charts Row 1 -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <!-- Resource Usage -->
-        <div class="bg-white p-6 rounded-lg shadow flex flex-col items-center">
-            <h3 class="font-bold text-lg mb-6 text-gray-800 w-full border-b pb-2">Uso por Recurso (Qtd. Aulas)</h3>
-            <div class="w-full h-72">
-                <canvas id="chartRecursos"></canvas>
-            </div>
-        </div>
-        
         <!-- Status Breakdown -->
          <div class="bg-white p-6 rounded-lg shadow flex flex-col items-center">
             <h3 class="font-bold text-lg mb-6 text-gray-800 w-full border-b pb-2">Status das Reservas</h3>
@@ -76,6 +117,7 @@
             </div>
         </div>
     </div>
+
 
     <!-- Charts Row 2 -->
     <div class="bg-white p-6 rounded-lg shadow flex flex-col items-center">
@@ -145,9 +187,6 @@
 
 <script>
     // --- Data Injection ---
-    const recursosLabels = [{% for r in uso_recursos_data %}"{{ r[0] }}",{% endfor %}];
-    const recursosData = [{% for r in uso_recursos_data %}{{ r[1] }},{% endfor %}];
-
     const stats = {
         realizadas: {{ realizadas }},
         nao_realizadas: {{ nao_realizadas }},
@@ -155,28 +194,7 @@
         possiveis: {{ total_possiveis }}
     };
 
-    // --- Chart 1: Recursos (Pie) ---
-    new Chart(document.getElementById('chartRecursos'), {
-        type: 'pie',
-        data: {
-            labels: recursosLabels,
-            datasets: [{
-                data: recursosData,
-                backgroundColor: [
-                    '#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#6366F1'
-                ]
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: { position: 'right' }
-            }
-        }
-    });
-
-    // --- Chart 2: Status Breakdown (Doughnut) ---
+    // --- Chart 1: Status Breakdown (Doughnut) ---
     new Chart(document.getElementById('chartStatus'), {
         type: 'doughnut',
         data: {
@@ -323,11 +341,7 @@
             doc.text(footerText, margin, pageHeight - margin);
         }
 
-        // 1. Página: Uso por Recurso
-        const recursosDataLines = recursosLabels.map((l, i) => `${l}: ${recursosData[i]} reservas`);
-        addMetricPage('Uso por Recurso', 'chartRecursos', recursosDataLines);
-
-        // 2. Página: Status das Reservas
+        // 1. Página: Status das Reservas
         doc.addPage();
         const statusDataLines = [
             `Realizadas: ${stats.realizadas}`,

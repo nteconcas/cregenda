@@ -936,12 +936,64 @@ def metricas():
         Reserva.data <= data_fim
     )
 
-    # 2. Uso por recurso (quantidade de aulas)
-    uso_recursos_data = query_base.with_entities(
-        Recurso.nome, func.count(Reserva.id)
-    ).group_by(Recurso.nome).all()
+    # 2. Métricas por Recurso (Total Solicitado, Concretizadas, Aproveitamento, Possibilidade, % Agendamento)
+    recursos = Recurso.query.filter_by(escola_id=current_user.escola_id).all()
     
-    # 3. Status das Reservas
+    # Calcular total de slots disponíveis por recurso no período
+    blocos = BlocoAula.query.filter_by(escola_id=current_user.escola_id).all()
+    blocos_por_dia = {}
+    for b in blocos:
+        blocos_por_dia[b.dia_semana] = blocos_por_dia.get(b.dia_semana, 0) + 1
+    
+    total_slots_periodo = 0
+    curr = data_inicio
+    while curr <= data_fim:
+        total_slots_periodo += blocos_por_dia.get(curr.weekday(), 0)
+        curr += timedelta(days=1)
+    
+    metricas_recursos = []
+    for recurso in recursos:
+        # Total Solicitado (todas as reservas do recurso no período)
+        total_solicitado = Reserva.query.filter(
+            Reserva.recurso_id == recurso.id,
+            Reserva.data >= data_inicio,
+            Reserva.data <= data_fim
+        ).count()
+        
+        # Concretizadas (status = confirmada)
+        concretizadas = Reserva.query.filter(
+            Reserva.recurso_id == recurso.id,
+            Reserva.data >= data_inicio,
+            Reserva.data <= data_fim,
+            Reserva.status == 'confirmada'
+        ).count()
+        
+        # Aproveitamento (% de concretizadas sobre total solicitado)
+        aproveitamento = round((concretizadas / total_solicitado * 100), 1) if total_solicitado > 0 else 0
+        
+        # Possibilidade de agendamento no período (total de slots - bloqueios do recurso)
+        num_bloqueios_recurso = Bloqueio.query.filter(
+            Bloqueio.recurso_id == recurso.id,
+            Bloqueio.data >= data_inicio,
+            Bloqueio.data <= data_fim
+        ).count()
+        possibilidade_agendamento = total_slots_periodo - num_bloqueios_recurso
+        if possibilidade_agendamento < 0:
+            possibilidade_agendamento = 0
+        
+        # % de agendamento (concretizadas / possibilidade)
+        pct_agendamento = round((concretizadas / possibilidade_agendamento * 100), 1) if possibilidade_agendamento > 0 else 0
+        
+        metricas_recursos.append({
+            'nome': recurso.nome,
+            'total_solicitado': total_solicitado,
+            'concretizadas': concretizadas,
+            'aproveitamento': aproveitamento,
+            'possibilidade_agendamento': possibilidade_agendamento,
+            'pct_agendamento': pct_agendamento
+        })
+    
+    # 3. Status das Reservas (geral)
     status_counts = query_base.with_entities(
         Reserva.status, func.count(Reserva.id)
     ).group_by(Reserva.status).all()
@@ -951,27 +1003,15 @@ def metricas():
     nao_realizadas = status_dict.get('nao_realizada', 0)
     canceladas = status_dict.get('cancelada', 0)
     
-    # 4. Reservas Possíveis
-    num_recursos = Recurso.query.filter_by(escola_id=current_user.escola_id).count()
-    blocos = BlocoAula.query.filter_by(escola_id=current_user.escola_id).all()
-    blocos_por_dia = {}
-    for b in blocos:
-        blocos_por_dia[b.dia_semana] = blocos_por_dia.get(b.dia_semana, 0) + 1
-        
-    total_slots = 0
-    curr = data_inicio
-    while curr <= data_fim:
-        total_slots += blocos_por_dia.get(curr.weekday(), 0)
-        curr += timedelta(days=1)
-        
-    # Contar bloqueios no período
+    # 4. Reservas Possíveis (geral)
+    num_recursos = len(recursos)
     num_bloqueios = Bloqueio.query.join(Recurso).filter(
         Recurso.escola_id == current_user.escola_id,
         Bloqueio.data >= data_inicio,
         Bloqueio.data <= data_fim
     ).count()
 
-    total_possiveis = (total_slots * num_recursos) - num_bloqueios
+    total_possiveis = (total_slots_periodo * num_recursos) - num_bloqueios
     if total_possiveis < 0: total_possiveis = 0
     
     # 5. Top 10 Professores
@@ -988,7 +1028,7 @@ def metricas():
                            usuario=current_user,
                            data_inicio=data_inicio,
                            data_fim=data_fim,
-                           uso_recursos_data=uso_recursos_data,
+                           metricas_recursos=metricas_recursos,
                            total_possiveis=total_possiveis,
                            realizadas=realizadas,
                            nao_realizadas=nao_realizadas,
