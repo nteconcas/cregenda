@@ -128,19 +128,6 @@
                         <span class="text-xs text-gray-400 block mt-1">Mês Atual</span>
                     </div>
                 </div>
-                <div class="px-6">
-                    <div class="mt-4 pt-4 border-t border-gray-50 flex items-center justify-between">
-                        <span class="text-xs text-gray-400">Taxa de Ocupação</span>
-                        <span class="text-xs font-medium text-green-600">
-                            {% if dado.recursos > 0 %}
-                                {{ ((dado.reservas / (dado.recursos * 20)) * 100)|round|int }}%
-                            {% else %}
-                                0%
-                            {% endif %}
-                        </span>
-                    </div>
-                </div>
-
                 <!-- Reports Section -->
                 <div class="px-6 pb-4">
                     <div class="pt-4 border-t border-gray-100">
