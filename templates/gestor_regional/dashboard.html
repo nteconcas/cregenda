@@ -1,0 +1,198 @@
+{% extends "base.html" %}
+{% block title %}Dashboard - Gestor Regional{% endblock %}
+{% block page_title %}Visão Geral da Regional{% endblock %}
+
+{% block content %}
+<div class="flex flex-col gap-8">
+    
+    <!-- Welcome Section -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex flex-col md:flex-row justify-between items-center gap-4">
+        <div>
+            <h2 class="text-2xl font-bold text-gray-800">{{ usuario.regiao.nome if usuario.regiao else 'Regional não definida' }}</h2>
+            <p class="text-gray-500 mt-1">
+                Bem-vindo, <strong class="text-indigo-600">{{ usuario.nome }}</strong>! Acompanhe os indicadores das escolas da sua regional.
+            </p>
+        </div>
+        <a href="{{ url_for('gestor_regional.cadastrar_escola') }}" class="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-lg font-medium transition-colors shadow-md flex items-center gap-2">
+            <i class="fas fa-plus"></i> Nova Escola
+        </a>
+    </div>
+
+    <!-- Top Metrics Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <!-- Escolas -->
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow relative overflow-hidden group">
+            <div class="absolute right-0 top-0 h-full w-1 bg-blue-500"></div>
+            <div class="flex justify-between items-start">
+                <div>
+                    <p class="text-sm font-medium text-gray-500 uppercase tracking-wider">Escolas</p>
+                    <h3 class="text-3xl font-bold text-gray-800 mt-2">{{ total_escolas }}</h3>
+                </div>
+                <div class="p-3 bg-blue-50 text-blue-600 rounded-lg group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                    <i class="fas fa-school text-xl"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recursos -->
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow relative overflow-hidden group">
+            <div class="absolute right-0 top-0 h-full w-1 bg-green-500"></div>
+            <div class="flex justify-between items-start">
+                <div>
+                    <p class="text-sm font-medium text-gray-500 uppercase tracking-wider">Recursos</p>
+                    <h3 class="text-3xl font-bold text-gray-800 mt-2">{{ total_recursos }}</h3>
+                </div>
+                <div class="p-3 bg-green-50 text-green-600 rounded-lg group-hover:bg-green-600 group-hover:text-white transition-colors">
+                    <i class="fas fa-cubes text-xl"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Professores -->
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow relative overflow-hidden group">
+            <div class="absolute right-0 top-0 h-full w-1 bg-orange-500"></div>
+            <div class="flex justify-between items-start">
+                <div>
+                    <p class="text-sm font-medium text-gray-500 uppercase tracking-wider">Professores</p>
+                    <h3 class="text-3xl font-bold text-gray-800 mt-2">{{ total_professores }}</h3>
+                </div>
+                <div class="p-3 bg-orange-50 text-orange-600 rounded-lg group-hover:bg-orange-600 group-hover:text-white transition-colors">
+                    <i class="fas fa-chalkboard-teacher text-xl"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Reservas -->
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow relative overflow-hidden group">
+            <div class="absolute right-0 top-0 h-full w-1 bg-purple-500"></div>
+            <div class="flex justify-between items-start">
+                <div>
+                    <p class="text-sm font-medium text-gray-500 uppercase tracking-wider">Reservas</p>
+                    <h3 class="text-3xl font-bold text-gray-800 mt-2">{{ total_reservas }}</h3>
+                </div>
+                <div class="p-3 bg-purple-50 text-purple-600 rounded-lg group-hover:bg-purple-600 group-hover:text-white transition-colors">
+                    <i class="fas fa-calendar-check text-xl"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Metrics per School -->
+    <div>
+        <h3 class="text-xl font-bold text-gray-800 mb-6 flex items-center gap-2">
+            <i class="fas fa-chart-pie text-indigo-500"></i>
+            Métricas por Escola
+        </h3>
+
+        {% if dados_escolas %}
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {% for dado in dados_escolas %}
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-lg transition-all duration-300 flex flex-col h-full">
+                <!-- Card Header -->
+                <div class="p-5 border-b border-gray-100 flex items-center gap-4 bg-gray-50 rounded-t-xl">
+                    <div class="w-10 h-10 rounded-full bg-white border border-gray-200 flex items-center justify-center text-indigo-600 shadow-sm">
+                        <i class="fas fa-school"></i>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <h4 class="text-lg font-bold text-gray-900 truncate" title="{{ dado.escola.nome }}">{{ dado.escola.nome }}</h4>
+                        <p class="text-xs text-gray-500">ID: {{ dado.escola.id }}</p>
+                    </div>
+                    <div class="relative group">
+                         <a href="{{ url_for('gestor_regional.editar_escola', id=dado.escola.id) }}" class="text-gray-400 hover:text-indigo-600 transition-colors">
+                            <i class="fas fa-cog"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Metrics Grid -->
+                <div class="p-6 grid grid-cols-3 gap-4 flex-1">
+                    <!-- Recursos -->
+                    <div class="text-center p-2 rounded-lg hover:bg-gray-50 transition-colors">
+                        <div class="text-green-500 text-lg mb-1"><i class="fas fa-flask"></i></div>
+                        <div class="text-xl font-bold text-gray-800">{{ dado.recursos }}</div>
+                        <div class="text-xs text-gray-500 uppercase tracking-wide">Recursos</div>
+                    </div>
+                    
+                    <!-- Professores -->
+                    <div class="text-center p-2 rounded-lg hover:bg-gray-50 transition-colors border-l border-r border-gray-100">
+                        <div class="text-orange-500 text-lg mb-1"><i class="fas fa-user-graduate"></i></div>
+                        <div class="text-xl font-bold text-gray-800">{{ dado.professores }}</div>
+                        <div class="text-xs text-gray-500 uppercase tracking-wide">Profs</div>
+                    </div>
+
+                    <!-- Reservas -->
+                    <div class="text-center p-2 rounded-lg hover:bg-gray-50 transition-colors">
+                        <div class="text-purple-500 text-lg mb-1"><i class="fas fa-calendar-alt"></i></div>
+                        <div class="text-xl font-bold text-gray-800">{{ dado.reservas }}</div>
+                        <div class="text-xs text-gray-500 uppercase tracking-wide">Reservas</div>
+                        <span class="text-xs text-gray-400 block mt-1">Mês Atual</span>
+                    </div>
+                </div>
+                <div class="px-6">
+                    <div class="mt-4 pt-4 border-t border-gray-50 flex items-center justify-between">
+                        <span class="text-xs text-gray-400">Taxa de Ocupação</span>
+                        <span class="text-xs font-medium text-green-600">
+                            {% if dado.recursos > 0 %}
+                                {{ ((dado.reservas / (dado.recursos * 20)) * 100)|round|int }}%
+                            {% else %}
+                                0%
+                            {% endif %}
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Reports Section -->
+                <div class="px-6 pb-4">
+                    <div class="pt-4 border-t border-gray-100">
+                        <h5 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-1">
+                            <i class="fas fa-chart-line"></i> Relatórios
+                        </h5>
+                        <form action="{{ url_for('gestor_regional.relatorio_escola', id=dado.escola.id) }}" method="GET" class="flex flex-col gap-2">
+                            <div class="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label class="block text-[10px] text-gray-400 mb-1">Início</label>
+                                    <input type="date" name="data_inicio" value="{{ data_inicio_padrao }}" class="w-full text-xs border-gray-200 rounded focus:ring-indigo-500 focus:border-indigo-500 py-1 px-2">
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] text-gray-400 mb-1">Fim</label>
+                                    <input type="date" name="data_fim" value="{{ data_fim_padrao }}" class="w-full text-xs border-gray-200 rounded focus:ring-indigo-500 focus:border-indigo-500 py-1 px-2">
+                                </div>
+                            </div>
+                            <button type="submit" class="w-full mt-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-medium py-2 px-3 rounded flex items-center justify-center gap-2 transition-colors">
+                                <i class="fas fa-file-alt"></i> Gerar Métricas
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Footer Actions -->
+                <div class="p-4 bg-gray-50 border-t border-gray-100 rounded-b-xl flex justify-between items-center text-sm">
+                    <a href="{{ url_for('gestor_regional.editar_escola', id=dado.escola.id) }}" class="text-indigo-600 hover:text-indigo-800 font-medium flex items-center gap-1">
+                        <i class="fas fa-edit"></i> Editar
+                    </a>
+                    
+                    <form method="POST" action="{{ url_for('gestor_regional.excluir_escola', id=dado.escola.id) }}" class="inline">
+                        <button type="submit" onclick="return confirm('Tem certeza que deseja excluir esta escola? Todos os dados serão perdidos!')" class="text-red-500 hover:text-red-700 font-medium flex items-center gap-1 transition-colors">
+                            <i class="fas fa-trash-alt"></i> Excluir
+                        </button>
+                    </form>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center py-16 bg-white rounded-xl border-2 border-dashed border-gray-300">
+            <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 text-gray-400 mb-4">
+                <i class="fas fa-chart-bar text-2xl"></i>
+            </div>
+            <h3 class="text-lg font-medium text-gray-900">Nenhuma métrica disponível</h3>
+            <p class="text-gray-500 mt-1 mb-6">Cadastre escolas para visualizar os indicadores de desempenho.</p>
+            <a href="{{ url_for('gestor_regional.cadastrar_escola') }}" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                <i class="fas fa-plus mr-2"></i> Cadastrar Primeira Escola
+            </a>
+        </div>
+        {% endif %}
+    </div>
+
+</div>
+{% endblock %}

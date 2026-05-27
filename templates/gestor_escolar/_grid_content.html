@@ -1,0 +1,102 @@
+<div class="overflow-x-auto rounded-lg border border-gray-200">
+    <table class="w-full border-collapse bg-white text-sm table-fixed" style="min-width: {{ recursos|length * 160 + 80 }}px;">
+        <thead>
+            <tr>
+                <th class="border-b border-r p-2 bg-gray-50 sticky left-0 z-10 w-20 text-center font-semibold text-gray-700">Horário</th>
+                {% for recurso in recursos %}
+                <th class="border-b p-2 bg-gray-50 font-semibold text-gray-700 text-center truncate px-4">{{ recurso.nome }}</th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for turno, blocos in blocos_por_turno.items() %}
+                <!-- Turno Header -->
+                {% set turno_colors = {
+                    'Matutino': 'bg-blue-50 border-y border-blue-200 text-blue-700',
+                    'Vespertino': 'bg-orange-50 border-y border-orange-200 text-orange-700',
+                    'Noturno': 'bg-indigo-50 border-y border-indigo-200 text-indigo-700'
+                } %}
+                {% set turno_icons = {
+                    'Matutino': '🌅',
+                    'Vespertino': '☀️',
+                    'Noturno': '🌙'
+                } %}
+                {% set t_class = turno_colors.get(turno, 'bg-gray-100 border-y border-gray-200 text-gray-700') %}
+                {% set t_icon = turno_icons.get(turno, '📅') %}
+                
+                <tr class="{{ t_class }}">
+                    <td class="p-2 font-bold uppercase tracking-wider text-sm pl-4 flex items-center gap-2" colspan="{{ recursos|length + 1 }}">
+                        <span class="text-xl">{{ t_icon }}</span> {{ turno }}
+                    </td>
+                </tr>
+                
+                {% for bloco in blocos %}
+                <tr class="hover:bg-gray-50 transition-colors">
+                    <td class="border-b border-r p-2 font-medium text-gray-600 sticky left-0 bg-white z-0 group-hover:bg-gray-50 text-center text-xs">
+                        {{ bloco.periodo.split(' - ')[1] if ' - ' in bloco.periodo else bloco.periodo }}
+                    </td>
+                    
+                    {% for recurso in recursos %}
+                        {% set cell = grid[bloco.id][recurso.id] %}
+                        <td class="border-b border-r p-1 align-top h-28 relative group/cell">
+                            
+                            {% if cell.type == 'livre' %}
+                                <div class="w-full h-full flex items-center justify-center opacity-0 group-hover/cell:opacity-100 transition-opacity">
+                                    <button onclick="toggleSelection(this, '{{ recurso.id }}', '{{ bloco.id }}')" 
+                                            class="px-3 py-1.5 text-xs font-medium bg-gray-100 text-gray-600 border border-gray-300 rounded hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-all flex items-center gap-1">
+                                        🔒 Bloquear
+                                    </button>
+                                </div>
+
+                            {% elif cell.type == 'reserva' %}
+                                {% set r = cell.obj %}
+                                {% set bg_class = 'bg-yellow-50 border-yellow-500' if r.status == 'nao_realizada' else 'bg-green-50 border-green-500' %}
+                                
+                                <div class="w-full h-full p-2 {{ bg_class }} border-l-4 rounded-r cursor-pointer hover:brightness-95 transition-all"
+                                     data-id="{{ r.id }}"
+                                     data-professor="{{ r.professor.nome }}"
+                                     data-turma="{{ r.turma.nome if r.turma else 'Sem turma' }}"
+                                     data-disciplina="{{ r.disciplina.nome if r.disciplina else 'Não informada' }}"
+                                     data-status="{{ r.status or 'indefinido' }}"
+                                     data-descricao="{{ r.descricao_pedagogica or '' }}"
+                                     data-motivo="{{ r.motivo_nao_realizacao or '' }}"
+                                     onclick="openModalDetalhes(this)">
+                                    <div class="font-bold text-gray-800 text-xs mb-1 truncate" title="{{ r.professor.nome }}">
+                                        👤 {{ r.professor.nome }}
+                                    </div>
+                                    <div class="text-xs text-gray-600 mb-1 truncate">
+                                        🎓 {{ r.turma.nome if r.turma else 'S/ Turma' }}
+                                    </div>
+                                    {% if r.status == 'nao_realizada' %}
+                                        <div class="inline-block text-[10px] font-bold uppercase tracking-wider text-yellow-800 bg-yellow-200 px-1 rounded">
+                                            Não Realizada
+                                        </div>
+                                    {% else %}
+                                        <div class="text-[10px] text-gray-500 truncate">
+                                            {{ r.descricao_pedagogica or 'Sem descrição' }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+
+                            {% elif cell.type == 'bloqueio' %}
+                                {% set b = cell.obj %}
+                                <div class="w-full h-full p-2 bg-red-50 border-l-4 border-red-500 rounded-r relative">
+                                    <div class="font-bold text-red-800 text-xs flex justify-between items-start">
+                                        🚫 BLOQUEADO
+                                        <button onclick="openModalDesbloqueio('{{ b.id }}')" class="text-red-400 hover:text-red-700 p-0.5 rounded transition-colors" title="Desbloquear">
+                                            &times;
+                                        </button>
+                                    </div>
+                                    <div class="text-xs text-red-700 mt-2 italic line-clamp-3">
+                                        {{ b.justificativa }}
+                                    </div>
+                                </div>
+                            {% endif %}
+                        </td>
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            {% endfor %}
+        </tbody>
+    </table>
+</div>

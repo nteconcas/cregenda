@@ -1,0 +1,506 @@
+{% extends "base.html" %}
+{% block title %}Nova Reserva - Professor{% endblock %}
+{% block page_title %}Nova Reserva{% endblock %}
+
+{% block content %}
+<style>
+    /* Estilos específicos para a Grid de Reservas */
+    .reservation-grid-container {
+        overflow-x: auto;
+    }
+    .reservation-table {
+        min-width: 800px;
+        border-collapse: separate;
+        border-spacing: 0;
+        margin-bottom: 2rem;
+    }
+    .reservation-table th, .reservation-table td {
+        border: 1px solid var(--border);
+        text-align: center;
+        vertical-align: middle;
+        padding: 0.75rem;
+    }
+    .reservation-table th {
+        background-color: var(--bg-body);
+        font-weight: 600;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
+    .shift-header {
+        background-color: var(--primary-light);
+        color: var(--primary);
+        font-weight: 700;
+        text-align: left !important;
+        padding: 1rem !important;
+    }
+    .cell-free {
+        background-color: #ECFDF5; /* Green 50 */
+        color: #047857; /* Green 700 */
+        cursor: pointer;
+        transition: background-color 0.2s;
+        user-select: none;
+    }
+    .cell-free:hover {
+        background-color: #D1FAE5; /* Green 100 */
+    }
+    .cell-free.selected {
+        background-color: #047857 !important; /* Green 700 */
+        color: white !important;
+        border: 2px solid #064E3B; /* Green 900 */
+    }
+    .cell-occupied {
+        background-color: #FEF2F2; /* Red 50 */
+        color: #B91C1C; /* Red 700 */
+        cursor: not-allowed;
+    }
+    .cell-my-reservation {
+        background-color: #EFF6FF; /* Blue 50 */
+        color: #1D4ED8; /* Blue 700 */
+        font-weight: 600;
+    }
+    
+    /* Floating Action Button for Reservation */
+    #fab-reserve {
+        position: fixed;
+        bottom: 2rem;
+        right: 2rem;
+        z-index: 500;
+        display: none;
+        box-shadow: var(--shadow-lg);
+        animation: slideIn 0.3s ease-out;
+    }
+    
+    @keyframes slideIn {
+        from { transform: translateY(100px); opacity: 0; }
+        to { transform: translateY(0); opacity: 1; }
+    }
+
+    /* Modal Styles */
+    .modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0,0,0,0.5);
+        align-items: center;
+        justify-content: center;
+    }
+    .modal.active {
+        display: flex;
+    }
+    .modal-content {
+        background-color: white;
+        padding: 2rem;
+        border-radius: var(--radius);
+        width: 100%;
+        max-width: 500px;
+        box-shadow: var(--shadow-lg);
+        max-height: 90vh;
+        overflow-y: auto;
+    }
+</style>
+
+    {% if escolas|length > 1 %}
+    <div class="flex gap-2 mb-6 overflow-x-auto pb-2">
+        {% for escola in escolas %}
+        <a href="{{ url_for('professor.nova_reserva', escola_id=escola.id, data=data_selecionada) }}" 
+           class="px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-colors duration-200 
+                  {% if escola.id == escola_selecionada_id %}bg-primary text-white shadow-md{% else %}bg-white text-gray-600 hover:bg-gray-100 border{% endif %}">
+           {{ escola.nome }}
+        </a>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="card">
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+        <div>
+            <h2 class="mb-2 text-xl font-bold">Grade de Disponibilidade</h2>
+            <p class="text-muted text-sm">Selecione uma ou mais aulas para reservar.</p>
+        </div>
+        <div class="flex flex-wrap items-center gap-2 w-full md:w-auto justify-start md:justify-end">
+             <div class="flex items-center gap-1">
+                <a href="{{ url_for('professor.nova_reserva', data=data_anterior, escola_id=escola_selecionada_id) }}" class="btn btn-secondary btn-sm px-3 py-1" title="Dia Anterior">&lt;</a>
+                
+                <form method="GET" class="flex items-center m-0">
+                    <input type="hidden" name="escola_id" value="{{ escola_selecionada_id }}">
+                    <label for="data" class="font-bold sr-only">Data:</label>
+                    <input type="date" name="data" id="data" value="{{ data_selecionada }}" onchange="this.form.submit()" class="p-1 border rounded text-sm" required>
+                </form>
+                
+                <a href="{{ url_for('professor.nova_reserva', data=data_proxima, escola_id=escola_selecionada_id) }}" class="btn btn-secondary btn-sm px-3 py-1" title="Próximo Dia">&gt;</a>
+            </div>
+            
+            <a href="{{ url_for('professor.nova_reserva', escola_id=escola_selecionada_id) }}" class="btn btn-secondary btn-sm ml-auto md:ml-0" title="Hoje">Hoje</a>
+        </div>
+    </div>
+
+    {% if blocos_por_turno %}
+    
+    <!-- Legenda (Desktop/Mobile) -->
+    <div class="flex flex-wrap gap-4 mb-4 text-sm px-1">
+        <div class="flex items-center gap-2">
+            <div class="w-4 h-4 rounded bg-green-50 border border-green-200"></div>
+            <span class="text-gray-600">Livre</span>
+        </div>
+        <div class="flex items-center gap-2">
+            <div class="w-4 h-4 rounded bg-blue-50 border border-blue-200"></div>
+            <span class="text-gray-600">Minha Reserva</span>
+        </div>
+        <div class="flex items-center gap-2">
+            <div class="w-4 h-4 rounded bg-red-50 border border-red-200"></div>
+            <span class="text-gray-600">Ocupado</span>
+        </div>
+         <div class="flex items-center gap-2">
+            <div class="w-4 h-4 rounded bg-gray-100 border border-gray-300"></div>
+            <span class="text-gray-600">Bloqueado</span>
+        </div>
+    </div>
+
+    <div class="reservation-grid-container">
+        
+        {% for turno, blocos in blocos_por_turno.items() %}
+        <h3 class="text-lg font-bold mb-2 mt-4 text-indigo-700">{{ turno }}</h3>
+        <table class="reservation-table">
+            <thead>
+                <tr>
+                    <th style="min-width: 120px;">Horário</th>
+                    {% for recurso in recursos %}
+                        <th style="min-width: 150px;">{{ recurso.nome }}</th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for bloco in blocos %}
+                <tr>
+                    <td class="font-bold bg-gray-50">{{ bloco.periodo.split(' - ')[1] if ' - ' in bloco.periodo else bloco.periodo }}</td>
+                    {% for recurso in recursos %}
+                        {% set slot = availability[bloco.id][recurso.id] %}
+                        
+                        {% if slot.status == 'reservado' %}
+                            {% set reserva = slot.obj %}
+                            {% if slot.is_mine %}
+                                <td class="cell-my-reservation cursor-pointer hover:brightness-95 transition-all relative group"
+                                    onclick="openCancellationModal('{{ reserva.id }}', '{{ recurso.nome }}', '{{ bloco.periodo }}', '{{ reserva.turma.nome if reserva.turma else 'Sem turma' }}', '{{ reserva.disciplina.nome if reserva.disciplina else 'Não informada' }}')">
+                                    <div class="text-sm">Reservado</div>
+                                    <div class="text-xs text-muted">{{ reserva.turma.nome if reserva.turma else '' }}</div>
+                                    
+                                    <!-- Tooltip/Indicator -->
+                                    <div class="absolute inset-0 flex items-center justify-center bg-red-50 bg-opacity-90 text-red-700 font-bold text-xs opacity-0 group-hover:opacity-100 transition-opacity">
+                                        Cancelar
+                                    </div>
+                                </td>
+                            {% else %}
+                                <td class="cell-occupied">
+                                    <div class="text-sm">Ocupado</div>
+                                    <div class="text-xs opacity-75">Prof. {{ reserva.professor.nome.split()[0] }}</div>
+                                </td>
+                            {% endif %}
+                        {% elif slot.status == 'bloqueado' %}
+                            <td class="cell-occupied" title="Bloqueio: {{ slot.obj.justificativa }}">
+                                <div class="text-sm">Bloqueado</div>
+                                <div class="text-xs opacity-75">Gestão</div>
+                            </td>
+                        {% else %}
+                            <td class="cell-free" 
+                                onclick="toggleSelection(this, '{{ recurso.id }}', '{{ recurso.nome }}', '{{ bloco.id }}', '{{ bloco.periodo }}', '{{ turno }}')"
+                                data-recurso-id="{{ recurso.id }}"
+                                data-bloco-id="{{ bloco.id }}">
+                                <div class="font-bold cell-content">+ Reservar</div>
+                            </td>
+                        {% endif %}
+
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% endfor %}
+
+    </div>
+    {% else %}
+        <div class="text-center p-8 bg-gray-50 rounded">
+            <p class="text-muted">Não há aulas configuradas para este dia da semana ({{ data_selecionada.strftime('%A') }}).</p>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Floating Action Button -->
+<button id="fab-reserve" class="btn btn-success font-bold py-3 px-6 rounded-full shadow-lg flex items-center gap-2" onclick="openModal()">
+    <span>Confirmar Reserva</span>
+    <span id="selection-count" class="bg-white text-green-700 rounded-full w-6 h-6 flex items-center justify-center text-xs">0</span>
+</button>
+
+<!-- Modal de Confirmação -->
+<div id="reservationModal" class="modal">
+    <div class="modal-content">
+        <h3 class="font-bold text-lg mb-4">Confirmar Reserva(s)</h3>
+        <form method="POST">
+            <input type="hidden" name="data_reserva" value="{{ data_selecionada }}">
+            <input type="hidden" name="escola_id" value="{{ escola_selecionada_id }}">
+            <input type="hidden" name="itens_reserva" id="itens_reserva">
+
+            <div class="bg-blue-50 p-4 rounded mb-4 border text-sm max-h-40 overflow-y-auto">
+                <p><strong>Data:</strong> {{ data_selecionada.strftime('%d/%m/%Y') }}</p>
+                <div id="modal_itens_list" class="mt-2"></div>
+            </div>
+
+            {% set disciplinas_escola = [] %}
+            {% for disc in usuario.disciplinas %}
+                {% if disc.escola_id == escola_selecionada_id %}
+                    {% set _ = disciplinas_escola.append(disc) %}
+                {% endif %}
+            {% endfor %}
+
+            {% if disciplinas_escola|length > 0 %}
+            <div class="form-group mb-4">
+                <label for="disciplina_id" class="font-bold mb-1 block">Disciplina *</label>
+                <select name="disciplina_id_select" id="disciplina_id" class="w-full border rounded p-2" required>
+                    <option value="">-- Selecione a Disciplina --</option>
+                    {% for disc in disciplinas_escola %}
+                        <option value="{{ disc.id }}">{{ disc.nome }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            {% endif %}
+
+            <div class="form-group mb-4">
+                <label for="turma_id" class="font-bold mb-1 block">Turma *</label>
+                <select name="turma_id" id="turma_id" class="w-full border rounded p-2" required>
+                    <option value="">-- Selecione a Turma --</option>
+                    {% for turma in turmas %}
+                    <option value="{{ turma.id }}" data-turno="{{ turma.turno }}">{{ turma.nome }} - {{ turma.turno }}</option>
+                    {% endfor %}
+                </select>
+                <small class="text-muted" id="turma_msg">Mostrando apenas turmas compatíveis.</small>
+            </div>
+
+            <div class="form-group mb-4">
+                <label for="descricao_pedagogica" class="font-bold mb-1 block">Descrição Pedagógica *</label>
+                <textarea name="descricao_pedagogica" id="descricao_pedagogica" rows="3" class="w-full border rounded p-2" placeholder="Descreva brevemente a atividade planejada..." required></textarea>
+            </div>
+
+            <div class="flex justify-between mt-6">
+                <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+                <button type="submit" class="btn btn-success">Confirmar Reserva</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal de Cancelamento -->
+<div id="cancellationModal" class="modal">
+    <div class="modal-content max-w-sm">
+        <div class="text-center mb-4">
+            <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
+                <svg class="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </div>
+            <h3 class="text-lg leading-6 font-medium text-gray-900">Cancelar Reserva</h3>
+            <p class="text-sm text-gray-500 mt-2">Tem certeza que deseja cancelar esta reserva? Esta ação não pode ser desfeita.</p>
+        </div>
+
+        <div class="bg-gray-50 p-4 rounded-lg mb-6 text-sm border">
+             <div class="flex justify-between mb-1">
+                 <span class="text-gray-500">Recurso:</span>
+                 <span class="font-medium text-gray-900" id="cancel_recurso"></span>
+             </div>
+             <div class="flex justify-between mb-1">
+                 <span class="text-gray-500">Horário:</span>
+                 <span class="font-medium text-gray-900" id="cancel_horario"></span>
+             </div>
+             <div class="flex justify-between mb-1">
+                 <span class="text-gray-500">Turma:</span>
+                 <span class="font-medium text-gray-900" id="cancel_turma"></span>
+             </div>
+             <div class="flex justify-between">
+                 <span class="text-gray-500">Disciplina:</span>
+                 <span class="font-medium text-gray-900" id="cancel_disciplina"></span>
+             </div>
+        </div>
+        
+        <form id="formCancelar" action="" method="POST" class="flex flex-col gap-2">
+            <button type="submit" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:text-sm">
+                Sim, Cancelar Reserva
+            </button>
+            <button type="button" class="w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:text-sm" onclick="closeCancellationModal()">
+                Voltar
+            </button>
+        </form>
+    </div>
+</div>
+
+<script>
+    function openCancellationModal(id, recurso, horario, turma) {
+        document.getElementById('formCancelar').action = `/professor/cancelar_reserva/${id}`;
+        document.getElementById('cancel_recurso').textContent = recurso;
+        document.getElementById('cancel_horario').textContent = horario;
+        document.getElementById('cancel_turma').textContent = turma;
+        document.getElementById('cancellationModal').classList.add('active');
+    }
+
+    function closeCancellationModal() {
+        document.getElementById('cancellationModal').classList.remove('active');
+    }
+
+    let selectedItems = [];
+    const blockOrder = {{ blocos_ids_ordenados | tojson }};
+    const blockIndexMap = {};
+    blockOrder.forEach((id, index) => {
+        blockIndexMap[id] = index;
+    });
+
+    function toggleSelection(cell, recursoId, recursoNome, blocoId, blocoNome, turno) {
+        const index = selectedItems.findIndex(item => item.recursoId === recursoId && item.blocoId === blocoId);
+        
+        if (index === -1) {
+            // Attempting to add
+            // Check for consecutive limit (max 2)
+            // We need to check if adding this block creates a sequence of 3 or more
+            
+            // Get all currently selected block indices
+            const currentIndices = selectedItems.map(item => blockIndexMap[parseInt(item.blocoId)]);
+            const newIndex = blockIndexMap[parseInt(blocoId)];
+            
+            // Add new index to list
+            const allIndices = [...currentIndices, newIndex].sort((a, b) => a - b);
+            
+            // Check for sequence
+            let maxConsecutive = 1;
+            let currentConsecutive = 1;
+            
+            for (let i = 1; i < allIndices.length; i++) {
+                if (allIndices[i] === allIndices[i-1] + 1) {
+                    currentConsecutive++;
+                } else {
+                    currentConsecutive = 1;
+                }
+                if (currentConsecutive > maxConsecutive) {
+                    maxConsecutive = currentConsecutive;
+                }
+            }
+            
+            if (maxConsecutive > 2) {
+                alert("Permitido reservar no máximo 2 aulas consecutivas para a mesma turma.");
+                return;
+            }
+
+            // Add
+            selectedItems.push({ recursoId, recursoNome, blocoId, blocoNome, turno });
+            cell.classList.add('selected');
+            cell.querySelector('.cell-content').textContent = '✓ Selecionado';
+        } else {
+            // Remove
+            selectedItems.splice(index, 1);
+            cell.classList.remove('selected');
+            cell.querySelector('.cell-content').textContent = '+ Reservar';
+        }
+        
+        updateFAB();
+    }
+    
+    function updateFAB() {
+        const fab = document.getElementById('fab-reserve');
+        const countBadge = document.getElementById('selection-count');
+        
+        if (selectedItems.length > 0) {
+            fab.style.display = 'flex';
+            countBadge.textContent = selectedItems.length;
+        } else {
+            fab.style.display = 'none';
+        }
+    }
+
+    function openModal() {
+        if (selectedItems.length === 0) return;
+
+        // Populate hidden input
+        const backendItems = selectedItems.map(item => ({
+            recurso_id: item.recursoId,
+            bloco_id: item.blocoId
+        }));
+        document.getElementById('itens_reserva').value = JSON.stringify(backendItems);
+        
+        // Populate display list
+        const listContainer = document.getElementById('modal_itens_list');
+        listContainer.innerHTML = '<p class="font-bold mb-1">Itens Selecionados:</p>';
+        const ul = document.createElement('ul');
+        ul.className = 'list-disc pl-4';
+        
+        // Check shifts
+        const shifts = new Set();
+        
+        selectedItems.forEach(item => {
+            const li = document.createElement('li');
+            li.textContent = `${item.recursoNome} - ${item.blocoNome}`;
+            ul.appendChild(li);
+            shifts.add(item.turno);
+        });
+        listContainer.appendChild(ul);
+        
+        // Filter Turmas
+        const select = document.getElementById('turma_id');
+        const options = select.options;
+        let visibleCount = 0;
+        select.value = "";
+        
+        // Logic: If all items are same shift, filter. If mixed, show all (or warning).
+        let targetTurno = null;
+        if (shifts.size === 1) {
+            targetTurno = shifts.values().next().value;
+        }
+        
+        for (let i = 0; i < options.length; i++) {
+            const option = options[i];
+            const turmaTurno = option.getAttribute('data-turno');
+            
+            if (option.value === "") {
+                option.style.display = 'block';
+                continue;
+            }
+
+            if (!targetTurno || turmaTurno === targetTurno) {
+                option.style.display = 'block';
+                option.disabled = false;
+                visibleCount++;
+            } else {
+                option.style.display = 'none';
+                option.disabled = true;
+            }
+        }
+        
+        const msg = document.getElementById('turma_msg');
+        if (visibleCount === 0) {
+            msg.textContent = "Nenhuma turma encontrada para o turno selecionado.";
+            msg.classList.add('text-red-500');
+        } else if (targetTurno) {
+            msg.textContent = `Mostrando ${visibleCount} turmas do turno ${targetTurno}.`;
+            msg.classList.remove('text-red-500');
+            msg.classList.remove('text-yellow-600');
+        } else {
+            msg.textContent = "Seleção mista: mostrando todas as turmas.";
+            msg.classList.add('text-yellow-600');
+            msg.classList.remove('text-red-500');
+        }
+
+        document.getElementById('reservationModal').classList.add('active');
+    }
+
+    function closeModal() {
+        document.getElementById('reservationModal').classList.remove('active');
+    }
+
+    // Fechar modal ao clicar fora
+    window.onclick = function(event) {
+        const modal = document.getElementById('reservationModal');
+        if (event.target == modal) {
+            closeModal();
+        }
+    }
+</script>
+{% endblock %}

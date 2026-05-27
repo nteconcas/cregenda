@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+{% block title %}Recursos Pedagógicos{% endblock %}
+{% block page_title %}Recursos Pedagógicos{% endblock %}
+
+{% block content %}
+<style>
+    /* Estilos copiados e adaptados de configuracoes.html para consistência */
+    .recurso-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 1.5rem;
+    }
+    
+    .recurso-card {
+        background-color: white;
+        border: 1px solid var(--border);
+        border-radius: 0.75rem;
+        padding: 1.5rem;
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .recurso-card:hover {
+        transform: translateY(-4px);
+        box-shadow: var(--shadow-lg);
+        border-color: var(--primary-hover);
+    }
+    
+    .recurso-header {
+        display: flex;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+
+    .recurso-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        flex-shrink: 0;
+        transition: all 0.3s ease;
+    }
+    
+    .recurso-info h3 {
+        font-size: 1.125rem;
+        font-weight: 600;
+        color: var(--text-main);
+        margin-bottom: 0.25rem;
+    }
+    
+    .recurso-info p {
+        font-size: 0.875rem;
+        color: var(--text-muted);
+        line-height: 1.4;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .recurso-actions {
+        display: flex;
+        gap: 0.5rem;
+        margin-top: auto;
+        padding-top: 1rem;
+        border-top: 1px solid var(--border);
+    }
+
+    /* Temas de Ícones */
+    .theme-info { background-color: #dbeafe; color: #2563eb; } /* Blue - Info/Tech */
+    .theme-science { background-color: #dcfce7; color: #16a34a; } /* Green - Nature/Science */
+    .theme-art { background-color: #fce7f3; color: #db2777; } /* Pink - Arts */
+    .theme-media { background-color: #ffedd5; color: #ea580c; } /* Orange - Media/Projector */
+    .theme-place { background-color: #f3e8ff; color: #9333ea; } /* Purple - Places */
+    .theme-default { background-color: #f3f4f6; color: #4b5563; } /* Gray - Default */
+
+</style>
+
+<div class="container mx-auto">
+    <div class="flex justify-between items-center mb-8">
+        <h2 class="text-2xl font-bold text-gray-800 flex items-center gap-3">
+            <span class="bg-indigo-100 text-indigo-600 p-2 rounded-lg">
+                <i class="fas fa-cubes"></i>
+            </span>
+            Recursos Cadastrados
+        </h2>
+        <a href="{{ url_for('gestor_escolar.cadastrar_recurso') }}" class="btn btn-primary shadow-sm flex items-center gap-2">
+            <i class="fas fa-plus"></i> Novo Recurso
+        </a>
+    </div>
+
+    {% if recursos %}
+    <div class="recurso-grid">
+        {% for r in recursos %}
+            {% set nome_lower = r.nome.lower() %}
+            
+            {# Lógica para definir ícone e tema #}
+            {% if 'info' in nome_lower or 'comput' in nome_lower or 'chromebook' in nome_lower or 'tablet' in nome_lower or 'notebook' in nome_lower %}
+                {% set icon = 'fas fa-laptop-code' %}
+                {% set theme = 'theme-info' %}
+            {% elif 'ciência' in nome_lower or 'biologia' in nome_lower or 'química' in nome_lower or 'física' in nome_lower or 'laboratório' in nome_lower %}
+                {% set icon = 'fas fa-flask' %}
+                {% set theme = 'theme-science' %}
+            {% elif 'vídeo' in nome_lower or 'video' in nome_lower or 'projetor' in nome_lower or 'tela' in nome_lower or 'som' in nome_lower %}
+                {% set icon = 'fas fa-photo-video' %}
+                {% set theme = 'theme-media' %}
+            {% elif 'biblioteca' in nome_lower or 'livro' in nome_lower or 'leitura' in nome_lower %}
+                {% set icon = 'fas fa-book-reader' %}
+                {% set theme = 'theme-info' %}
+            {% elif 'arte' in nome_lower or 'música' in nome_lower or 'pintura' in nome_lower %}
+                {% set icon = 'fas fa-palette' %}
+                {% set theme = 'theme-art' %}
+            {% elif 'auditório' in nome_lower or 'teatro' in nome_lower or 'palco' in nome_lower %}
+                {% set icon = 'fas fa-theater-masks' %}
+                {% set theme = 'theme-place' %}
+            {% elif 'quadra' in nome_lower or 'ginásio' in nome_lower or 'esporte' in nome_lower %}
+                {% set icon = 'fas fa-basketball-ball' %}
+                {% set theme = 'theme-place' %}
+            {% elif 'sala' in nome_lower or 'aula' in nome_lower %}
+                {% set icon = 'fas fa-chalkboard-teacher' %}
+                {% set theme = 'theme-default' %}
+            {% else %}
+                {% set icon = 'fas fa-cube' %}
+                {% set theme = 'theme-default' %}
+            {% endif %}
+
+            <div class="recurso-card group">
+                <div class="recurso-header">
+                    <div class="recurso-icon {{ theme }}">
+                        <i class="{{ icon }}"></i>
+                    </div>
+                    <div class="recurso-info min-w-0 flex-1">
+                        <h3 class="truncate" title="{{ r.nome }}">{{ r.nome }}</h3>
+                        <p>{{ r.descricao or 'Sem descrição cadastrada.' }}</p>
+                    </div>
+                </div>
+                
+                <div class="recurso-actions">
+                    <a href="{{ url_for('gestor_escolar.editar_recurso', id=r.id) }}" class="flex-1 btn btn-light btn-sm flex items-center justify-center gap-2 hover:bg-gray-100 text-gray-700">
+                        <i class="fas fa-edit"></i> Editar
+                    </a>
+                    <form method="POST" action="{{ url_for('gestor_escolar.excluir_recurso', id=r.id) }}" class="flex-1">
+                        <button type="submit" onclick="return confirm('Tem certeza que deseja excluir o recurso {{ r.nome }}?')" class="w-full btn btn-light btn-sm flex items-center justify-center gap-2 hover:bg-red-50 hover:text-red-600 text-gray-700">
+                            <i class="fas fa-trash-alt"></i> Excluir
+                        </button>
+                    </form>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+    {% else %}
+        <div class="bg-white rounded-xl shadow-sm p-12 text-center border-2 border-dashed border-gray-300">
+            <div class="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6 text-gray-400 text-3xl">
+                <i class="fas fa-cubes"></i>
+            </div>
+            <h3 class="text-xl font-bold text-gray-900 mb-2">Nenhum recurso encontrado</h3>
+            <p class="text-gray-500 mb-8 max-w-md mx-auto">Comece cadastrando os recursos da escola como laboratórios, projetores, salas especiais e equipamentos.</p>
+            <a href="{{ url_for('gestor_escolar.cadastrar_recurso') }}" class="btn btn-primary inline-flex items-center gap-2 px-6 py-3">
+                <i class="fas fa-plus"></i> Cadastrar Primeiro Recurso
+            </a>
+        </div>
+    {% endif %}
+
+    <div class="mt-8 border-t pt-6">
+        <a href="{{ url_for('gestor_escolar.configuracoes') }}" class="inline-flex items-center text-gray-600 hover:text-primary font-medium transition-colors">
+            <i class="fas fa-arrow-left mr-2"></i> Voltar para Configurações
+        </a>
+    </div>
+</div>
+{% endblock %}

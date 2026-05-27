@@ -1,0 +1,189 @@
+{% extends "base.html" %}
+{% block title %}Configurações - Gestor Escolar{% endblock %}
+
+{% block content %}
+<style>
+    .config-container {
+        padding: 2rem;
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+    
+    .config-header {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+    
+    .header-icon {
+        background-color: var(--primary);
+        color: white;
+        width: 40px;
+        height: 40px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+    }
+    
+    .config-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 1.5rem;
+    }
+    
+    .config-card {
+        background-color: white;
+        border: 1px solid var(--border);
+        border-radius: 0.75rem;
+        padding: 1.5rem;
+        display: flex;
+        align-items: flex-start;
+        gap: 1rem;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        color: inherit;
+        box-shadow: var(--shadow-sm);
+    }
+    
+    .config-card:hover {
+        transform: translateY(-4px);
+        box-shadow: var(--shadow);
+        border-color: var(--primary-hover);
+    }
+    
+    .card-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        flex-shrink: 0;
+        transition: all 0.3s ease;
+    }
+    
+    .config-card:hover .card-icon {
+        color: white;
+    }
+    
+    .card-content h3 {
+        font-size: 1.125rem;
+        font-weight: 600;
+        color: var(--text-main);
+        margin-bottom: 0.25rem;
+        transition: color 0.3s;
+    }
+    
+    .config-card:hover h3 {
+        color: var(--primary);
+    }
+    
+    .card-content p {
+        font-size: 0.875rem;
+        color: var(--text-muted);
+        line-height: 1.4;
+    }
+    
+    /* Icon Themes */
+    .icon-teal { background-color: #ccfbf1; color: #0d9488; }
+    .config-card:hover .icon-teal { background-color: #0d9488; }
+    
+    .icon-indigo { background-color: #e0e7ff; color: #4f46e5; }
+    .config-card:hover .icon-indigo { background-color: #4f46e5; }
+    
+    .icon-green { background-color: #dcfce7; color: #16a34a; }
+    .config-card:hover .icon-green { background-color: #16a34a; }
+    
+    .icon-orange { background-color: #ffedd5; color: #ea580c; }
+    .config-card:hover .icon-orange { background-color: #ea580c; }
+    
+    .icon-purple { background-color: #f3e8ff; color: #9333ea; }
+    .config-card:hover .icon-purple { background-color: #9333ea; }
+    
+    .icon-blue { background-color: #dbeafe; color: #2563eb; }
+    .config-card:hover .icon-blue { background-color: #2563eb; }
+</style>
+
+<div class="config-container">
+    <div class="config-header">
+        <div class="header-icon">
+            <i class="fas fa-cogs"></i>
+        </div>
+        <h2 style="font-size: 1.5rem; font-weight: 700; color: var(--text-main);">Painel de Configurações</h2>
+    </div>
+
+    <div class="config-grid">
+        
+        <!-- Recursos -->
+        <a href="{{ url_for('gestor_escolar.recursos') }}" class="config-card">
+            <div class="card-icon icon-teal">
+                <i class="fas fa-cubes"></i>
+            </div>
+            <div class="card-content">
+                <h3>Recursos</h3>
+                <p>Gerencie laboratórios, salas e equipamentos da escola.</p>
+            </div>
+        </a>
+
+        <!-- Turmas -->
+        <a href="{{ url_for('gestor_escolar.turmas') }}" class="config-card">
+            <div class="card-icon icon-indigo">
+                <i class="fas fa-graduation-cap"></i>
+            </div>
+            <div class="card-content">
+                <h3>Turmas</h3>
+                <p>Gerencie as turmas, séries e enturmações.</p>
+            </div>
+        </a>
+
+        <!-- Professores -->
+        <a href="{{ url_for('gestor_escolar.professores') }}" class="config-card">
+            <div class="card-icon icon-green">
+                <i class="fas fa-chalkboard-teacher"></i>
+            </div>
+            <div class="card-content">
+                <h3>Professores</h3>
+                <p>Gerencie o corpo docente e atribuições.</p>
+            </div>
+        </a>
+
+        <!-- Visualizar Grade -->
+        <a href="{{ url_for('gestor_escolar.grade') }}" class="config-card">
+            <div class="card-icon icon-orange">
+                <i class="fas fa-calendar-alt"></i>
+            </div>
+            <div class="card-content">
+                <h3>Visualizar Grade</h3>
+                <p>Consulte a grade horária e disponibilidade.</p>
+            </div>
+        </a>
+
+        <!-- Configurar Grade -->
+        <a href="{{ url_for('gestor_escolar.configurar_grade') }}" class="config-card">
+            <div class="card-icon icon-purple">
+                <i class="fas fa-sliders-h"></i>
+            </div>
+            <div class="card-content">
+                <h3>Configurar Grade</h3>
+                <p>Defina parâmetros, turnos e restrições.</p>
+            </div>
+        </a>
+
+        <!-- Métricas -->
+        <a href="{{ url_for('gestor_escolar.metricas') }}" class="config-card">
+            <div class="card-icon icon-blue">
+                <i class="fas fa-chart-pie"></i>
+            </div>
+            <div class="card-content">
+                <h3>Métricas</h3>
+                <p>Relatórios e estatísticas do sistema.</p>
+            </div>
+        </a>
+
+    </div>
+</div>
+{% endblock %}

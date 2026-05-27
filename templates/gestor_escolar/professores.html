@@ -1,0 +1,174 @@
+{% extends "base.html" %}
+{% block title %}Professores{% endblock %}
+{% block content %}
+    <div class="flex flex-col md:flex-row justify-between items-center mb-6">
+        <h2 class="text-xl font-bold text-gray-800 mb-4 md:mb-0">Gerenciar Professores</h2>
+        <div class="flex gap-2">
+            <a href="{{ url_for('gestor_escolar.professores', view='professores') }}" 
+               class="px-4 py-2 rounded-lg font-medium transition-colors duration-200 
+                      {% if view == 'professores' %}bg-primary text-white shadow-md{% else %}bg-gray-100 text-gray-600 hover:bg-gray-200{% endif %}">
+               👨‍🏫 Professores
+            </a>
+            <a href="{{ url_for('gestor_escolar.professores', view='solicitacoes') }}" 
+               class="px-4 py-2 rounded-lg font-medium transition-colors duration-200 relative
+                      {% if view == 'solicitacoes' %}bg-primary text-white shadow-md{% else %}bg-gray-100 text-gray-600 hover:bg-gray-200{% endif %}">
+               📋 Solicitações
+               {% if solicitacoes|length > 0 %}
+                <span class="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold w-6 h-6 flex items-center justify-center rounded-full border-2 border-white">
+                    {{ solicitacoes|length }}
+                </span>
+               {% endif %}
+            </a>
+        </div>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, msg in messages %}
+                <div class="alert alert-{{ category }} mb-6">
+                    {{ msg }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    {% if view == 'professores' %}
+        <div class="flex justify-end mb-4">
+            <a href="{{ url_for('gestor_escolar.cadastrar_professor') }}" class="btn btn-success shadow-sm">
+                ➕ Novo Professor
+            </a>
+        </div>
+
+        {% if professores %}
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                {% for p in professores %}
+                <div class="card hover:shadow-lg transition-shadow duration-200 flex flex-col justify-between h-full border-l-4 {% if p.ativo %}border-l-green-500{% else %}border-l-red-500{% endif %} p-0 overflow-hidden">
+                    <div class="p-3">
+                        <div class="flex items-center gap-2 mb-2">
+                            <div class="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 font-bold text-sm">
+                                {{ p.nome[0] | upper }}
+                            </div>
+                            <div class="overflow-hidden">
+                                <h3 class="font-bold text-sm text-gray-900 truncate" title="{{ p.nome }}">{{ p.nome }}</h3>
+                                <div class="flex gap-1">
+                                    {% if p.tipo_vinculo == 'Vinculado' %}
+                                        <span class="badge bg-blue-100 text-blue-800 border border-blue-200 text-[10px] px-1 py-0">Vinculado</span>
+                                    {% else %}
+                                        <span class="badge bg-gray-100 text-gray-600 border border-gray-200 text-[10px] px-1 py-0">Direto</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="space-y-1 text-xs text-gray-600">
+                            <div class="flex items-center gap-1">
+                                <span class="text-gray-400">📧</span>
+                                <span class="truncate" title="{{ p.email }}">{{ p.email }}</span>
+                            </div>
+                            <div class="flex items-center gap-1">
+                                <span class="text-gray-400">📱</span>
+                                <span>{{ p.telefone or '—' }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-gray-50 p-2 border-t flex justify-end">
+                        {% if p.tipo_vinculo == 'Direto' %}
+                        <div class="flex items-center w-full gap-1">
+                            <a href="{{ url_for('gestor_escolar.editar_professor', id=p.id) }}" class="btn btn-secondary btn-xs flex-grow justify-center text-xs py-1" title="Editar Dados">
+                                ✏️
+                            </a>
+                            <a href="{{ url_for('gestor_escolar.gerenciar_atribuicoes', id=p.id) }}" class="btn btn-primary btn-xs flex-grow justify-center text-xs py-1" title="Gerenciar Atribuições (Turmas/Disciplinas)">
+                                📚
+                            </a>
+                            <form action="{{ url_for('gestor_escolar.desativar_professor_direto', id=p.id) }}" method="POST" onsubmit="return confirm('Tem certeza que deseja desativar este professor? Ele perderá o acesso ao painel.');" class="flex-shrink-0">
+                                <button type="submit" class="text-red-500 hover:text-red-700 hover:bg-red-50 p-1 rounded transition-colors" title="Desativar/Remover">
+                                    ❌
+                                </button>
+                            </form>
+                        </div>
+                        {% else %}
+                        <div class="flex items-center w-full gap-1">
+                            <a href="{{ url_for('gestor_escolar.gerenciar_atribuicoes', id=p.id) }}" class="btn btn-primary btn-xs flex-grow justify-center text-xs py-1" title="Gerenciar Atribuições (Turmas/Disciplinas)">
+                                📚 Atribuições
+                            </a>
+                            <form action="{{ url_for('gestor_escolar.desvincular_professor', id=p.vinculo_id) }}" method="POST" onsubmit="return confirm('Tem certeza que deseja desvincular este professor?');" class="flex-shrink-0">
+                                <button type="submit" class="text-red-500 hover:text-red-700 hover:bg-red-50 p-1 rounded transition-colors" title="Desvincular">
+                                    ❌
+                                </button>
+                            </form>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="card p-8 text-center bg-gray-50 border-dashed border-2 border-gray-300">
+                <div class="text-4xl mb-4">👨‍🏫</div>
+                <h3 class="text-lg font-medium text-gray-900 mb-2">Nenhum professor encontrado</h3>
+                <p class="text-gray-500 mb-6">Cadastre os professores ou aceite solicitações de vínculo.</p>
+                <a href="{{ url_for('gestor_escolar.cadastrar_professor') }}" class="btn btn-primary">
+                    Cadastrar Primeiro Professor
+                </a>
+            </div>
+        {% endif %}
+
+    {% elif view == 'solicitacoes' %}
+        
+        {% if solicitacoes %}
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                {% for s in solicitacoes %}
+                <div class="card hover:shadow-lg transition-shadow duration-200 flex flex-col justify-between h-full border-l-4 border-l-yellow-500 p-0 overflow-hidden">
+                    <div class="p-3">
+                        <div class="flex items-center gap-2 mb-2">
+                            <div class="w-8 h-8 rounded-full bg-yellow-100 flex items-center justify-center text-yellow-600 font-bold text-sm">
+                                {{ s.professor.nome[0] | upper }}
+                            </div>
+                            <div class="overflow-hidden">
+                                <h3 class="font-bold text-sm text-gray-900 truncate" title="{{ s.professor.nome }}">{{ s.professor.nome }}</h3>
+                                <div class="text-[10px] text-gray-500 truncate">{{ s.data_solicitacao.strftime('%d/%m/%Y') }}</div>
+                            </div>
+                        </div>
+                        
+                        <div class="space-y-1 text-xs text-gray-600 mb-2">
+                            <div class="flex items-center gap-1">
+                                <span class="text-gray-400">📧</span>
+                                <span class="truncate" title="{{ s.professor.email }}">{{ s.professor.email }}</span>
+                            </div>
+                            <div class="flex items-center gap-1">
+                                <span class="text-gray-400">🏫</span>
+                                <span class="truncate" title="Escola ID: {{ s.professor.escola_id }}">Escola: {{ s.professor.escola_id }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-gray-50 p-2 border-t flex gap-1">
+                        <a href="{{ url_for('gestor_escolar.confirmar_vinculo', id=s.id) }}" class="btn btn-success btn-xs flex-1 flex justify-center items-center text-xs py-1" title="Aceitar e Atribuir">
+                            ✅
+                        </a>
+                        <form action="{{ url_for('gestor_escolar.rejeitar_vinculo', id=s.id) }}" method="POST" class="flex-1">
+                            <button type="submit" class="btn btn-danger btn-xs w-full justify-center text-xs py-1" title="Recusar">
+                                ❌
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="card p-8 text-center bg-gray-50 border-dashed border-2 border-gray-300">
+                <div class="text-4xl mb-4">📭</div>
+                <h3 class="text-lg font-medium text-gray-900 mb-2">Nenhuma solicitação pendente</h3>
+                <p class="text-gray-500">Quando um professor de outra escola solicitar vínculo, o pedido aparecerá aqui.</p>
+            </div>
+        {% endif %}
+
+    {% endif %}
+
+    <div class="mt-8 border-t pt-4">
+        <a href="{{ url_for('dashboard') }}" class="flex items-center text-primary font-medium hover:underline">
+            <span class="mr-2">&larr;</span> Voltar ao Dashboard
+        </a>
+    </div>
+{% endblock %}

@@ -1,0 +1,67 @@
+<!-- templates/gestor_geral/editar_regional.html -->
+{% extends "base.html" %}
+{% block title %}Editar Gestor Regional - CRE{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h2>Editar Gestor Regional</h2>
+    <p>Alterando: <strong>{{ gestor.nome }}</strong></p>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, msg in messages %}
+                <div style="margin: 1rem 0; padding: 0.75rem; border-radius: 6px; 
+                    {% if category == 'error' %}background: #ffebee; color: #c62828;
+                    {% else %}background: #e8f5e9; color: #2e7d32;{% endif %}">
+                    {{ msg }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <form method="POST">
+        <div style="margin-bottom: 1.25rem;">
+            <label for="nome" style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Nome Completo</label>
+            <input type="text" id="nome" name="nome" value="{{ gestor.nome }}" required 
+                   style="width: 100%; padding: 0.6rem; border: 1px solid #ccc; border-radius: 6px;">
+        </div>
+
+        <div style="margin-bottom: 1.25rem;">
+            <label for="email" style="display: block; margin-bottom: 0.5rem; font-weight: 600;">E-mail</label>
+            <input type="email" id="email" name="email" value="{{ gestor.email }}" required 
+                   style="width: 100%; padding: 0.6rem; border: 1px solid #ccc; border-radius: 6px;">
+        </div>
+
+        <div style="margin-bottom: 1.25rem;">
+            <label for="telefone" style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Telefone</label>
+            <input type="text" id="telefone" name="telefone" value="{{ gestor.telefone or '' }}" 
+                   placeholder="(00) 00000-0000" 
+                   style="width: 100%; padding: 0.6rem; border: 1px solid #ccc; border-radius: 6px;">
+        </div>
+
+        <div style="margin-bottom: 1.25rem;">
+            <label for="nova_senha" style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Nova Senha (opcional)</label>
+            <input type="password" id="nova_senha" name="nova_senha" 
+                   placeholder="Deixe em branco para manter a atual"
+                   style="width: 100%; padding: 0.6rem; border: 1px solid #ccc; border-radius: 6px;">
+        </div>
+
+        <div style="margin-bottom: 1.25rem;">
+            <label for="regiao_nome" style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Regional</label>
+            <select name="regiao_nome" required style="width: 100%; padding: 0.6rem; border: 1px solid #ccc; border-radius: 6px;">
+                <option value="">Selecione uma regional</option>
+                {% for reg in regioes %}
+                    <option value="{{ reg.nome }}" {% if reg.id == regiao_atual %}selected{% endif %}>
+                        {{ reg.nome }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <button type="submit" style="background: #e67e22; color: white; padding: 0.75rem 1.5rem; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;">
+            Atualizar Gestor Regional
+        </button>
+        <a href="{{ url_for('dashboard') }}" style="display: inline-block; margin-left: 1rem; color: #3498db; text-decoration: none;">Cancelar</a>
+    </form>
+</div>
+{% endblock %}

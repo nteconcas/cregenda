@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Cadastrar Recurso{% endblock %}
+{% block page_title %}Novo Recurso{% endblock %}
+
+{% block content %}
+<div class="card max-w-lg">
+    <h2>Cadastrar Novo Recurso Pedagógico</h2>
+
+    <form method="POST">
+        <div class="form-group">
+            <label for="nome">Nome do Recurso *</label>
+            <input type="text" id="nome" name="nome" required placeholder="Ex: Projetor Epson">
+        </div>
+        <div class="form-group">
+            <label for="descricao">Descrição (opcional)</label>
+            <textarea id="descricao" name="descricao" rows="3" placeholder="Detalhes sobre o equipamento..."></textarea>
+        </div>
+        
+        <div class="flex gap-4 mt-4">
+            <button type="submit" class="btn btn-success">Cadastrar Recurso</button>
+            <a href="{{ url_for('gestor_escolar.recursos') }}" class="btn btn-secondary">Cancelar</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,529 @@
+{% extends "base.html" %}
+{% block title %}Dashboard Gestor{% endblock %}
+{% block content %}
+
+<!-- Painel de Gerenciamento (Atalhos) removido e migrado para Configurações -->
+
+<div class="card bg-white p-6 rounded-lg shadow-md">
+    <!-- Header & Date Nav -->
+    <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+        <h2 class="text-2xl font-bold text-gray-800">Painel de Reservas</h2>
+        
+        <div class="flex items-center gap-2 bg-gray-100 p-1 rounded-lg">
+            <a href="{{ url_for('gestor_escolar.dashboard', data=data_anterior) }}" class="p-2 hover:bg-white rounded shadow-sm transition">
+                &larr;
+            </a>
+            <input type="date" value="{{ data_filtro }}" onchange="window.location.href='?data='+this.value" 
+                   class="bg-transparent border-none focus:ring-0 text-center font-medium w-36">
+            <a href="{{ url_for('gestor_escolar.dashboard', data=data_proxima) }}" class="p-2 hover:bg-white rounded shadow-sm transition">
+                &rarr;
+            </a>
+            <a href="{{ url_for('gestor_escolar.dashboard', data=today_date) }}" class="px-3 py-1 bg-primary text-white text-sm rounded hover:bg-primary-hover ml-2">
+                Hoje
+            </a>
+        </div>
+    </div>
+
+    <!-- Legend -->
+    <div class="flex flex-wrap gap-4 mb-6 text-sm border-b pb-4">
+        <div class="flex items-center"><span class="w-4 h-4 bg-white border border-gray-300 mr-2 rounded"></span> <span class="text-gray-600">Livre (Clique para bloquear)</span></div>
+        <div class="flex items-center"><span class="w-4 h-4 bg-green-50 border border-green-500 mr-2 rounded"></span> <span class="text-gray-600">Reservado</span></div>
+        <div class="flex items-center"><span class="w-4 h-4 bg-red-50 border border-red-500 mr-2 rounded"></span> <span class="text-gray-600">Bloqueado</span></div>
+        <div class="flex items-center"><span class="w-4 h-4 bg-yellow-50 border border-yellow-500 mr-2 rounded"></span> <span class="text-gray-600">Não Realizada</span></div>
+    </div>
+
+    <!-- Grid -->
+    <div id="grid-container">
+        {% include 'gestor_escolar/_grid_content.html' %}
+    </div>
+</div>
+
+
+<!-- Modals -->
+
+<!-- Block Modal -->
+<div id="modalBloqueio" class="modal-backdrop">
+    <div class="modal-panel">
+        <div class="modal-header">
+            <div>
+                <h3 class="modal-title">Bloquear Horário</h3>
+                <p class="modal-subtitle">Impedir reservas para este período</p>
+            </div>
+            <button onclick="closeModal('modalBloqueio')" class="modal-close">
+                <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+        </div>
+        
+        <form action="{{ url_for('gestor_escolar.bloquear_aula') }}" method="POST" class="flex flex-col h-full">
+            <input type="hidden" name="recurso_id" id="block_recurso_id">
+            <input type="hidden" name="bloco_id" id="block_bloco_id">
+            <input type="hidden" name="data" id="block_data">
+            
+            <div class="modal-body">
+                <!-- Quick Selection -->
+                <div class="mb-6">
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-3">Sugestões Rápidas</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button type="button" onclick="setBlockReason('Manutenção')" class="btn btn-secondary justify-center text-sm">
+                            🔧 Manutenção
+                        </button>
+                        <button type="button" onclick="setBlockReason('Evento Escolar')" class="btn btn-secondary justify-center text-sm">
+                            🎉 Evento Escolar
+                        </button>
+                        <button type="button" onclick="setBlockReason('Feriado')" class="btn btn-secondary justify-center text-sm">
+                            📅 Feriado
+                        </button>
+                        <button type="button" onclick="setBlockReason('Reunião')" class="btn btn-secondary justify-center text-sm">
+                            👥 Reunião
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Textarea -->
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Justificativa Detalhada</label>
+                    <textarea name="justificativa" id="block_justificativa" class="w-full p-3 border rounded-lg text-sm bg-gray-50 focus:bg-white transition-colors" rows="4" required placeholder="Digite o motivo do bloqueio aqui..." style="resize: none;"></textarea>
+                </div>
+            </div>
+            
+            <div class="modal-footer">
+                <button type="button" onclick="closeModal('modalBloqueio')" class="btn btn-secondary">
+                    Cancelar
+                </button>
+                <button type="submit" class="btn btn-danger">
+                    Confirmar Bloqueio
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Details/Manage Modal -->
+<div id="modalDetalhes" class="modal-backdrop">
+    <div class="modal-panel">
+        <div class="modal-header">
+            <div>
+                <h3 class="modal-title">Detalhes da Reserva</h3>
+                <p class="modal-subtitle">Gerencie as informações desta aula</p>
+            </div>
+            <button onclick="closeModal('modalDetalhes')" class="modal-close">
+                <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+        </div>
+        
+        <div class="modal-body">
+            <!-- Informações sobre a reserva -->
+            <div id="detalhesContent" class="mb-6"></div>
+            
+            <!-- Botão Aula não concretizada e motivos -->
+            <div id="areaNaoRealizada" class="border-t pt-4 mt-4">
+                <button type="button" onclick="toggleNaoRealizada()" class="flex items-center gap-3 w-full p-2 hover:bg-gray-50 rounded-lg transition-colors group text-left">
+                    <div id="checkNaoRealizada" class="flex items-center justify-center w-5 h-5 border rounded border-gray-300 bg-white transition-colors group-hover:border-primary">
+                        <svg class="text-white hidden w-3.5 h-3.5" id="iconNaoRealizada" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+                    </div>
+                    <span class="font-medium text-gray-700 group-hover:text-gray-900">Marcar como "Aula não concretizada"</span>
+                </button>
+
+                <form id="formNaoRealizada" action="" method="POST" class="hidden mt-3 pl-8 space-y-3">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Motivo da não realização</label>
+                        <textarea name="motivo" class="w-full p-3 border rounded-lg text-sm bg-gray-50 focus:bg-white transition-colors" rows="3" required placeholder="Descreva o motivo..."></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-full">
+                        Salvar Justificativa
+                    </button>
+                </form>
+            </div>
+
+             <!-- Cancelar (Secondary Action) -->
+             <div id="areaCancelar" class="mt-6 pt-4 border-t text-center">
+                <form id="formCancelar" action="" method="POST" onsubmit="return confirm('Tem certeza que deseja CANCELAR esta reserva? O horário ficará livre.')">
+                    <button type="submit" class="text-sm text-red-600 hover:text-red-800 hover:underline font-medium">
+                        Cancelar Reserva (Remover)
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Unblock Modal -->
+<div id="modalDesbloqueio" class="modal-backdrop">
+    <div class="modal-panel max-w-md">
+        <div class="modal-header">
+             <div>
+                <h3 class="modal-title">Desbloquear Horário</h3>
+                <p class="modal-subtitle">Liberar este horário para novas reservas</p>
+             </div>
+            <button onclick="closeModal('modalDesbloqueio')" class="modal-close">
+                <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+        </div>
+        
+        <form action="{{ url_for('gestor_escolar.desbloquear_aula') }}" method="POST">
+            <input type="hidden" name="bloqueio_id" id="unblock_id">
+            <input type="hidden" name="data" value="{{ data_filtro }}">
+            
+            <div class="modal-body">
+                <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 flex items-start gap-4">
+                    <span class="text-2xl">🔓</span>
+                    <div>
+                        <h4 class="text-sm font-bold text-yellow-800 mb-1">Confirmar Desbloqueio</h4>
+                        <p class="text-yellow-700 text-sm">
+                            O horário ficará disponível imediatamente para novos agendamentos.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="modal-footer">
+                <button type="button" onclick="closeModal('modalDesbloqueio')" class="btn btn-secondary">
+                    Cancelar
+                </button>
+                <button type="submit" class="btn btn-success">
+                    Confirmar
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Floating Selection Bar -->
+<div id="selectionBar" class="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white px-6 py-3 rounded-full shadow-2xl flex items-center gap-4 z-50 transition-all duration-300 translate-y-24">
+    <span class="font-medium text-sm flex items-center gap-2">
+        <span class="bg-white text-gray-900 rounded-full w-6 h-6 flex items-center justify-center font-bold text-xs" id="selectedCount">0</span>
+        aulas selecionadas
+    </span>
+    
+    <div class="h-6 w-px bg-gray-700"></div>
+
+    <button onclick="clearSelection()" class="text-gray-300 hover:text-white text-sm font-medium transition-colors">
+        Cancelar
+    </button>
+    
+    <button onclick="openModalBloqueioMultiplo()" class="bg-red-600 hover:bg-red-700 text-white px-4 py-1.5 rounded-full text-sm font-bold transition-all flex items-center gap-2">
+        <span>🔒</span> Bloquear Selecionados
+    </button>
+</div>
+
+<!-- Modal Bloqueio Múltiplo -->
+<div id="modalBloqueioMultiplo" class="modal-backdrop">
+    <div class="modal-panel">
+        <div class="modal-header">
+            <div>
+                <h3 class="modal-title">Bloquear Múltiplos Horários</h3>
+                <p class="modal-subtitle">Impedir reservas para <span id="modalCount">0</span> horários selecionados</p>
+            </div>
+            <button onclick="closeModal('modalBloqueioMultiplo')" class="modal-close">
+                <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+        </div>
+        
+        <form action="{{ url_for('gestor_escolar.bloquear_multiplos') }}" method="POST" class="flex flex-col h-full">
+            <input type="hidden" name="data" value="{{ data_filtro }}">
+            <div id="hiddenInputsContainer"></div>
+            
+            <div class="modal-body">
+                <!-- Quick Selection (Reuse style) -->
+                <div class="mb-6">
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-3">Sugestões Rápidas</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button type="button" onclick="setMultiBlockReason('Manutenção')" class="btn btn-secondary justify-center text-sm">
+                            🔧 Manutenção
+                        </button>
+                        <button type="button" onclick="setMultiBlockReason('Evento Escolar')" class="btn btn-secondary justify-center text-sm">
+                            🎉 Evento Escolar
+                        </button>
+                        <button type="button" onclick="setMultiBlockReason('Feriado')" class="btn btn-secondary justify-center text-sm">
+                            📅 Feriado
+                        </button>
+                        <button type="button" onclick="setMultiBlockReason('Reunião')" class="btn btn-secondary justify-center text-sm">
+                            👥 Reunião
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Textarea -->
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Justificativa Detalhada</label>
+                    <textarea name="justificativa" id="multi_block_justificativa" class="w-full p-3 border rounded-lg text-sm bg-gray-50 focus:bg-white transition-colors" rows="4" required placeholder="Digite o motivo do bloqueio aqui..." style="resize: none;"></textarea>
+                </div>
+            </div>
+            
+            <div class="modal-footer">
+                <button type="button" onclick="closeModal('modalBloqueioMultiplo')" class="btn btn-secondary">
+                    Cancelar
+                </button>
+                <button type="submit" class="btn btn-danger">
+                    Confirmar Bloqueios
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+// State for multiple selection
+let selectedItems = new Set(); // Stores strings "recurso_id|bloco_id"
+
+function toggleSelection(btn, recursoId, blocoId) {
+    // Prevent default button action (like submitting a form if it was inside one, or event bubbling)
+    if(event) event.stopPropagation();
+    
+    const key = `${recursoId}|${blocoId}`;
+    
+    if (selectedItems.has(key)) {
+        selectedItems.delete(key);
+        // Desmarcado
+        btn.classList.remove('bg-red-600', 'text-white', 'border-red-700', 'hover:bg-red-700', 'opacity-100');
+        btn.classList.add('bg-gray-100', 'text-gray-600', 'border-gray-300', 'hover:bg-red-50', 'hover:text-red-600', 'hover:border-red-200');
+        
+        // Remove a classe de seleção da célula pai (visualização mais forte)
+        const cell = btn.closest('td');
+        if (cell) {
+            cell.classList.remove('bg-red-100');
+        }
+        
+        // Volta a ser invisível se não hover
+        btn.parentElement.classList.remove('opacity-100');
+        btn.parentElement.classList.add('opacity-0', 'group-hover/cell:opacity-100');
+        
+        btn.innerHTML = '🔒 Bloquear';
+    } else {
+        selectedItems.add(key);
+        // Marcado
+        btn.classList.remove('bg-gray-100', 'text-gray-600', 'border-gray-300', 'hover:bg-red-50', 'hover:text-red-600', 'hover:border-red-200');
+        btn.classList.add('bg-red-600', 'text-white', 'border-red-700', 'hover:bg-red-700', 'opacity-100');
+        
+        // Adiciona cor de fundo na célula
+        const cell = btn.closest('td');
+        if (cell) {
+            cell.classList.add('bg-red-100');
+        }
+
+        // Força visibilidade
+        btn.parentElement.classList.remove('opacity-0', 'group-hover/cell:opacity-100');
+        btn.parentElement.classList.add('opacity-100');
+
+        btn.innerHTML = '✓ Selecionado';
+    }
+    
+    updateSelectionBar();
+}
+
+function updateSelectionBar() {
+    const bar = document.getElementById('selectionBar');
+    const countSpan = document.getElementById('selectedCount');
+    
+    countSpan.textContent = selectedItems.size;
+    
+    if (selectedItems.size > 0) {
+        bar.classList.remove('translate-y-24');
+    } else {
+        bar.classList.add('translate-y-24');
+    }
+}
+
+function clearSelection() {
+    selectedItems.clear();
+    
+    // Reset all buttons in the grid
+    const buttons = document.querySelectorAll('button[onclick^="toggleSelection"]');
+    buttons.forEach(btn => {
+        btn.classList.remove('bg-red-600', 'text-white', 'border-red-700', 'hover:bg-red-700');
+        btn.classList.add('bg-gray-100', 'text-gray-600', 'border-gray-300', 'hover:bg-red-50', 'hover:text-red-600', 'hover:border-red-200');
+        btn.innerHTML = '🔒 Bloquear';
+    });
+    
+    updateSelectionBar();
+}
+
+function openModalBloqueioMultiplo() {
+    if (selectedItems.size === 0) return;
+    
+    document.getElementById('modalCount').textContent = selectedItems.size;
+    
+    // Populate hidden inputs
+    const container = document.getElementById('hiddenInputsContainer');
+    container.innerHTML = '';
+    
+    selectedItems.forEach(item => {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'itens[]';
+        input.value = item;
+        container.appendChild(input);
+    });
+    
+    document.getElementById('modalBloqueioMultiplo').classList.add('active');
+}
+
+function setMultiBlockReason(reason) {
+    const textarea = document.getElementById('multi_block_justificativa');
+    textarea.value = reason;
+    textarea.focus();
+}
+
+function setBlockReason(reason) {
+    const textarea = document.getElementById('block_justificativa');
+    textarea.value = reason;
+    textarea.focus();
+}
+
+function openModalBloqueio(recursoId, blocoId, data) {
+
+    document.getElementById('block_recurso_id').value = recursoId;
+    document.getElementById('block_bloco_id').value = blocoId;
+    document.getElementById('block_data').value = data;
+    document.getElementById('block_justificativa').value = ''; 
+    
+    document.getElementById('modalBloqueio').classList.add('active');
+}
+
+function openModalDesbloqueio(id) {
+    document.getElementById('unblock_id').value = id;
+    document.getElementById('modalDesbloqueio').classList.add('active');
+}
+
+function openModalDetalhes(element) {
+    if (!element) return;
+    
+    const id = element.dataset.id;
+    const prof = element.dataset.professor || 'Professor não identificado';
+    const turma = element.dataset.turma || 'Sem turma';
+    const disciplina = element.dataset.disciplina || 'Não informada';
+    const status = element.dataset.status || 'indefinido';
+    const desc = element.dataset.descricao || '';
+    const motivo = element.dataset.motivo || '';
+
+    const content = `
+        <div class="flex flex-col gap-4">
+            <!-- Header Grid -->
+            <div class="grid grid-cols-2 gap-4">
+                <div class="bg-gray-50 rounded-lg p-3 border col-span-2">
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Professor</label>
+                    <div class="font-bold text-gray-900 text-sm truncate" title="${prof}">${prof}</div>
+                </div>
+                <div class="bg-gray-50 rounded-lg p-3 border">
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Disciplina</label>
+                    <div class="font-bold text-gray-900 text-sm truncate" title="${disciplina}">${disciplina}</div>
+                </div>
+                <div class="bg-gray-50 rounded-lg p-3 border">
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Turma</label>
+                    <div class="font-bold text-gray-900 text-sm truncate" title="${turma}">${turma}</div>
+                </div>
+            </div>
+
+            <!-- Status -->
+            <div class="flex items-center justify-between border rounded-lg p-3 bg-white">
+                <span class="text-sm font-medium text-gray-600">Estado da Reserva</span>
+                <span class="badge ${status === 'confirmada' ? 'badge-success' : 'badge-warning'}">
+                    ${status.replace('_', ' ').toUpperCase()}
+                </span>
+            </div>
+            
+            <!-- Descrição -->
+            <div>
+                <div class="flex items-center gap-2 mb-2">
+                    <span class="text-lg">📝</span>
+                    <label class="text-sm font-bold text-gray-800">Atividade Pedagógica</label>
+                </div>
+                <div class="bg-gray-50 rounded-lg p-4 border relative">
+                    <p class="text-gray-700 text-sm leading-relaxed whitespace-pre-wrap">${desc || '<span class="text-gray-500 italic">Nenhuma descrição informada.</span>'}</p>
+                </div>
+            </div>
+
+            ${motivo ? `
+            <div class="bg-red-50 rounded-lg p-4 border border-red-200">
+                <h4 class="font-bold text-xs text-red-700 uppercase mb-1">Motivo da não realização</h4>
+                <p class="text-red-800 text-sm">${motivo}</p>
+            </div>` : ''}
+        </div>
+    `;
+    document.getElementById('detalhesContent').innerHTML = content;
+    
+    const formNaoRealizada = document.getElementById('formNaoRealizada');
+    const formCancelar = document.getElementById('formCancelar');
+    const areaNaoRealizada = document.getElementById('areaNaoRealizada');
+    const areaCancelar = document.getElementById('areaCancelar');
+    const checkbox = document.getElementById('checkNaoRealizada');
+    const icon = document.getElementById('iconNaoRealizada');
+    
+    // Reset state
+    formNaoRealizada.classList.add('hidden');
+    checkbox.classList.remove('bg-primary', 'border-primary');
+    checkbox.classList.add('bg-white', 'border-gray-300');
+    icon.classList.add('hidden');
+    
+    // Configure Actions visibility
+    if (status !== 'nao_realizada' && status !== 'cancelada') {
+        formNaoRealizada.action = `/gestor_escolar/marcar_nao_realizada/${id}`;
+        formCancelar.action = `/gestor_escolar/cancelar_reserva/${id}`;
+        areaNaoRealizada.style.display = 'block';
+        areaCancelar.style.display = 'block';
+    } else {
+        areaNaoRealizada.style.display = 'none';
+        areaCancelar.style.display = 'none';
+    }
+    
+    document.getElementById('modalDetalhes').classList.add('active');
+}
+
+function toggleNaoRealizada() {
+    const form = document.getElementById('formNaoRealizada');
+    const checkbox = document.getElementById('checkNaoRealizada');
+    const icon = document.getElementById('iconNaoRealizada');
+    
+    if (form.classList.contains('hidden')) {
+        form.classList.remove('hidden');
+        // Checked state
+        checkbox.classList.remove('bg-white', 'border-gray-300');
+        checkbox.classList.add('bg-primary', 'border-primary');
+        icon.classList.remove('hidden');
+    } else {
+        form.classList.add('hidden');
+        // Unchecked state
+        checkbox.classList.add('bg-white', 'border-gray-300');
+        checkbox.classList.remove('bg-primary', 'border-primary');
+        icon.classList.add('hidden');
+    }
+}
+
+function closeModal(id) {
+    document.getElementById(id).classList.remove('active');
+}
+
+// Close modals on click outside
+window.onclick = function(event) {
+    if (event.target.classList.contains('modal-backdrop')) {
+        closeModal(event.target.id);
+    }
+}
+
+// Auto-refresh logic (10 seconds)
+setInterval(function() {
+    // Only refresh if no modal is active to prevent UX disruption
+    if (document.querySelector('.modal-backdrop.active')) {
+        return;
+    }
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const dataParam = urlParams.get('data') || "{{ today_date }}";
+    
+    fetch(`{{ url_for('gestor_escolar.dashboard') }}?partial=true&data=${dataParam}`)
+        .then(response => {
+            if (!response.ok) throw new Error('Network response was not ok');
+            return response.text();
+        })
+        .then(html => {
+            const container = document.getElementById('grid-container');
+            if (container) {
+                container.innerHTML = html;
+            }
+        })
+        .catch(err => console.error('Erro ao atualizar grid:', err));
+}, 10000);
+</script>
+
+
+{% endblock %}

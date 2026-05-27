@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block title %}Aprovar Vínculo{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-6">
+    <div class="max-w-4xl mx-auto bg-white rounded-lg shadow-md p-6">
+        <h2 class="text-2xl font-bold text-gray-800 mb-6 border-b pb-2">Aprovar Vínculo de Professor</h2>
+        
+        <div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6">
+            <div class="flex">
+                <div class="flex-shrink-0">
+                    <svg class="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+                    </svg>
+                </div>
+                <div class="ml-3">
+                    <p class="text-sm text-blue-700">
+                        Você está aprovando o vínculo do professor <strong>{{ vinculo.professor.nome }}</strong> ({{ vinculo.professor.email }}).
+                        <br>Selecione as disciplinas e turmas que este professor terá acesso nesta escola.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <form action="{{ url_for('gestor_escolar.aprovar_vinculo', id=vinculo.id) }}" method="POST">
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <!-- Seleção de Disciplinas -->
+                <div class="border rounded-lg p-4">
+                    <h3 class="font-bold text-lg text-gray-700 mb-3 flex items-center">
+                        <span class="mr-2">📚</span> Disciplinas
+                    </h3>
+                    <p class="text-xs text-gray-500 mb-3">Selecione as disciplinas que este professor leciona nesta escola.</p>
+                    
+                    <div class="max-h-60 overflow-y-auto space-y-2">
+                        {% if disciplinas %}
+                            {% for disciplina in disciplinas %}
+                            <label class="flex items-center space-x-2 p-2 hover:bg-gray-50 rounded cursor-pointer">
+                                <input type="checkbox" name="disciplinas" value="{{ disciplina.id }}" class="form-checkbox h-5 w-5 text-blue-600 rounded">
+                                <span class="text-gray-700">{{ disciplina.nome }}</span>
+                            </label>
+                            {% endfor %}
+                        {% else %}
+                            <p class="text-sm text-gray-500 italic">Nenhuma disciplina cadastrada nesta escola.</p>
+                            <a href="{{ url_for('gestor_escolar.configuracoes') }}" class="text-sm text-blue-600 hover:underline">Cadastrar disciplinas</a>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Seleção de Turmas -->
+                <div class="border rounded-lg p-4">
+                    <h3 class="font-bold text-lg text-gray-700 mb-3 flex items-center">
+                        <span class="mr-2">🏫</span> Turmas
+                    </h3>
+                    <p class="text-xs text-gray-500 mb-3">Selecione as turmas que este professor terá acesso.</p>
+                    
+                    <div class="max-h-60 overflow-y-auto space-y-2">
+                        {% if turmas %}
+                            {% for turma in turmas %}
+                            <label class="flex items-center space-x-2 p-2 hover:bg-gray-50 rounded cursor-pointer">
+                                <input type="checkbox" name="turmas" value="{{ turma.id }}" class="form-checkbox h-5 w-5 text-green-600 rounded">
+                                <span class="text-gray-700 font-medium">{{ turma.nome }}</span>
+                                <span class="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded">{{ turma.turno }}</span>
+                            </label>
+                            {% endfor %}
+                        {% else %}
+                            <p class="text-sm text-gray-500 italic">Nenhuma turma cadastrada nesta escola.</p>
+                            <a href="{{ url_for('gestor_escolar.turmas') }}" class="text-sm text-blue-600 hover:underline">Cadastrar turmas</a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex items-center justify-end gap-3 mt-6 border-t pt-4">
+                <a href="{{ url_for('gestor_escolar.professores', view='solicitacoes') }}" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors">
+                    Cancelar
+                </a>
+                <button type="submit" class="px-6 py-2 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 shadow-md transition-colors flex items-center">
+                    <span class="mr-2">✅</span> Confirmar Aprovação
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

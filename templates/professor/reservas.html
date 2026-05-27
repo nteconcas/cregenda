@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block title %}Minhas Reservas - Professor{% endblock %}
+{% block page_title %}Minhas Reservas{% endblock %}
+
+{% block content %}
+    {% if escolas|length > 1 %}
+    <div class="flex gap-2 mb-6 overflow-x-auto pb-2">
+        {% for escola in escolas %}
+        <a href="{{ url_for('professor.minhas_reservas', escola_id=escola.id, data=data_filtro) }}" 
+           class="px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-colors duration-200 
+                  {% if escola.id == escola_selecionada_id %}bg-primary text-white shadow-md{% else %}bg-white text-gray-600 hover:bg-gray-100 border{% endif %}">
+           {{ escola.nome }}
+        </a>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="card">
+
+    <div class="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
+        <h2>Histórico de Reservas</h2>
+        
+        <div class="flex flex-wrap items-center gap-2 justify-center md:justify-end w-full md:w-auto">
+            <div class="flex items-center gap-1">
+                <a href="{{ url_for('professor.minhas_reservas', data=data_anterior, escola_id=escola_selecionada_id) }}" class="btn btn-secondary btn-sm px-3 py-1" title="Dia Anterior">&lt;</a>
+
+                <form method="GET" class="flex items-center m-0">
+                    <input type="hidden" name="escola_id" value="{{ escola_selecionada_id }}">
+                    <label for="data" class="font-bold text-sm sr-only">Filtrar:</label>
+                    <input type="date" name="data" id="data" value="{{ data_filtro }}" onchange="this.form.submit()" class="p-1 border rounded text-sm w-32" required>
+                </form>
+                
+                <a href="{{ url_for('professor.minhas_reservas', data=data_proxima, escola_id=escola_selecionada_id) }}" class="btn btn-secondary btn-sm px-3 py-1" title="Próximo Dia">&gt;</a>
+            </div>
+            
+            <a href="{{ url_for('professor.minhas_reservas', data=today_date, escola_id=escola_selecionada_id) }}" class="btn btn-secondary btn-sm" title="Ir para Hoje">Hoje</a>
+
+            <a href="{{ url_for('professor.nova_reserva', data=data_filtro, escola_id=escola_selecionada_id) }}" class="btn btn-success text-sm ml-0 md:ml-2 w-full md:w-auto text-center">Nova Reserva</a>
+        </div>
+    </div>
+
+    <div class="overflow-x-auto w-full shadow-sm rounded-lg border border-gray-200">
+        <table class="w-full text-sm text-left text-gray-500">
+            <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+                <tr>
+                    <th class="px-4 py-3">Data</th>
+                    <th class="px-4 py-3">Recurso</th>
+                    <th class="px-4 py-3">Horário</th>
+                    <th class="px-4 py-3">Turma</th>
+                    <th class="px-4 py-3">Status</th>
+                    <th class="px-4 py-3">Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for reserva in reservas %}
+                <tr class="bg-white border-b hover:bg-gray-50">
+                    <td class="px-4 py-3 whitespace-nowrap">{{ reserva.data.strftime('%d/%m/%Y') }}</td>
+                    <td class="px-4 py-3 whitespace-nowrap font-medium text-gray-900">{{ reserva.recurso.nome }}</td>
+                    <td class="px-4 py-3">{{ reserva.disciplina.nome if reserva.disciplina else '-' }}</td>
+                    <td class="px-4 py-3 whitespace-nowrap">{{ reserva.bloco.periodo.split(' - ')[1] if ' - ' in reserva.bloco.periodo else reserva.bloco.periodo }}</td>
+                    <td class="px-4 py-3">{{ reserva.turma.nome if reserva.turma else '-' }}</td>
+                    <td class="px-4 py-3">
+                        {% if reserva.status == 'confirmada' %}
+                            <span class="px-2 py-1 font-semibold leading-tight text-green-700 bg-green-100 rounded-full text-xs">Confirmada</span>
+                        {% else %}
+                            <span class="px-2 py-1 font-semibold leading-tight text-yellow-700 bg-yellow-100 rounded-full text-xs">Cancelada</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-4 py-3">
+                        {% if reserva.status == 'confirmada' %}
+                        <form action="{{ url_for('professor.cancelar_reserva', id=reserva.id) }}" method="POST" onsubmit="return confirm('Tem certeza que deseja cancelar esta reserva?');" style="display:inline;">
+                            <button type="submit" class="text-red-600 hover:text-red-900 font-medium text-xs border border-red-200 hover:bg-red-50 rounded px-2 py-1 transition-colors">Cancelar</button>
+                        </form>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="7" class="text-center py-8 text-gray-500 bg-white">
+                        <div class="flex flex-col items-center justify-center">
+                            <i class="fas fa-calendar-times text-4xl text-gray-300 mb-2"></i>
+                            <p>Nenhuma reserva encontrada para esta data.</p>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

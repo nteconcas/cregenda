@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Editar Recurso{% endblock %}
+{% block page_title %}Editar Recurso{% endblock %}
+
+{% block content %}
+<div class="card max-w-lg">
+    <h2>Editar Recurso: {{ recurso.nome }}</h2>
+
+    <form method="POST">
+        <div class="form-group">
+            <label for="nome">Nome do Recurso *</label>
+            <input type="text" id="nome" name="nome" value="{{ recurso.nome }}" required>
+        </div>
+        <div class="form-group">
+            <label for="descricao">Descrição</label>
+            <textarea id="descricao" name="descricao" rows="3">{{ recurso.descricao or '' }}</textarea>
+        </div>
+        
+        <div class="flex gap-4 mt-4">
+            <button type="submit" class="btn btn-primary">Atualizar Recurso</button>
+            <a href="{{ url_for('gestor_escolar.recursos') }}" class="btn btn-secondary">Cancelar</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

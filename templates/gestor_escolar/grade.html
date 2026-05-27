@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}Grade Horária{% endblock %}
+{% block content %}
+    <div class="flex justify-between items-center mb-6">
+        <h2 class="text-xl font-bold text-gray-800">Grade Horária</h2>
+        <a href="{{ url_for('gestor_escolar.configurar_grade') }}" class="btn btn-primary shadow-sm">
+            ⚙️ Configurar
+        </a>
+    </div>
+
+    {% if grade_agrupada %}
+        <div class="space-y-8">
+            {% for grupo in grade_agrupada %}
+            <div class="card p-0 overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-200 border-l-4 border-l-primary">
+                <!-- Cabeçalho com os dias -->
+                <div class="bg-gray-50 px-6 py-4 border-b">
+                    <h3 class="font-bold text-lg text-gray-800 flex items-center gap-2">
+                        <span class="text-2xl">📅</span>
+                        <div>
+                            <span class="block text-sm text-gray-500 font-normal uppercase tracking-wider">Dias da Semana</span>
+                            {{ grupo.dias_nomes|join(', ') }}
+                        </div>
+                    </h3>
+                </div>
+                
+                <!-- Corpo com os turnos e aulas -->
+                <div class="p-6 bg-white">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        {% for turno, aulas in grupo.turnos.items() %}
+                        <div class="bg-white rounded-lg border border-gray-200 overflow-hidden flex flex-col h-full">
+                            {% set turno_colors = {
+                                'Matutino': 'bg-blue-50 text-blue-800 border-blue-100',
+                                'Vespertino': 'bg-orange-50 text-orange-800 border-orange-100',
+                                'Noturno': 'bg-indigo-50 text-indigo-800 border-indigo-100'
+                            } %}
+                            {% set t_class = turno_colors.get(turno, 'bg-gray-100 text-gray-800') %}
+                            
+                            <div class="{{ t_class }} px-4 py-3 border-b font-bold text-center uppercase tracking-wide text-sm">
+                                {{ turno }}
+                            </div>
+                            <div class="p-4 flex-1 bg-gray-50/50">
+                                <ul class="space-y-2">
+                                    {% for aula in aulas %}
+                                    <li class="text-sm bg-white p-3 rounded border border-gray-200 shadow-sm flex items-center">
+                                        <span class="w-2 h-2 bg-green-500 rounded-full mr-3 flex-shrink-0 shadow-[0_0_4px_rgba(34,197,94,0.6)]"></span>
+                                        <span class="font-medium text-gray-700">{{ aula }}</span>
+                                    </li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="card p-12 text-center bg-gray-50 border-dashed border-2 border-gray-300">
+            <div class="text-5xl mb-4 opacity-50">⏱️</div>
+            <h3 class="text-xl font-medium text-gray-900 mb-2">Nenhuma grade horária configurada</h3>
+            <p class="text-gray-500 mb-8 max-w-md mx-auto">Configure os dias da semana e os horários de aula para permitir o agendamento de recursos.</p>
+            <a href="{{ url_for('gestor_escolar.configurar_grade') }}" class="btn btn-primary btn-lg shadow-md">
+                Configurar Agora
+            </a>
+        </div>
+    {% endif %}
+
+    <div class="mt-8 border-t pt-4">
+        <a href="{{ url_for('dashboard') }}" class="flex items-center text-primary font-medium hover:underline">
+            <span class="mr-2">&larr;</span> Voltar ao Dashboard
+        </a>
+    </div>
+{% endblock %}

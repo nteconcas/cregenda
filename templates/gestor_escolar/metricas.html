@@ -1,0 +1,362 @@
+{% extends "base.html" %}
+{% block title %}Métricas - Gestor Escolar{% endblock %}
+
+{% block content %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<div class="flex flex-col gap-6 pb-10" id="metrics-container">
+    <!-- Header & Filters -->
+    <div class="bg-white p-6 rounded-lg shadow-md no-print">
+        <div class="flex flex-col md:flex-row justify-between items-end gap-4">
+            <div>
+                <h2 class="text-2xl font-bold text-gray-800">📊 Métricas e Relatórios</h2>
+                <p class="text-gray-500 text-sm">Análise de desempenho e ocupação</p>
+            </div>
+            
+            <div class="flex gap-3 items-end">
+                <form class="flex gap-3 items-end bg-gray-50 p-3 rounded-lg border">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Início</label>
+                        <input type="date" name="data_inicio" value="{{ data_inicio }}" class="p-2 border rounded text-sm focus:ring-2 focus:ring-primary focus:border-transparent outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Fim</label>
+                        <input type="date" name="data_fim" value="{{ data_fim }}" class="p-2 border rounded text-sm focus:ring-2 focus:ring-primary focus:border-transparent outline-none">
+                    </div>
+                    <button type="submit" class="bg-primary text-white px-4 py-2 rounded text-sm font-medium hover:bg-primary-hover transition-colors">
+                        Filtrar
+                    </button>
+                </form>
+                
+                <button onclick="exportPDF()" class="bg-gray-800 text-white px-4 py-2 rounded text-sm font-medium hover:bg-gray-900 transition-colors flex items-center gap-2 h-[66px] self-start">
+                    <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                    Exportar PDF
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Resumo Cards -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="bg-white p-4 rounded-lg shadow border-l-4 border-blue-500">
+            <div class="text-xs font-bold text-gray-500 uppercase">Total Realizadas</div>
+            <div class="text-2xl font-bold text-gray-800">{{ realizadas }}</div>
+        </div>
+        <div class="bg-white p-4 rounded-lg shadow border-l-4 border-yellow-500">
+            <div class="text-xs font-bold text-gray-500 uppercase">Não Concretizadas</div>
+            <div class="text-2xl font-bold text-gray-800">{{ nao_realizadas }}</div>
+        </div>
+        <div class="bg-white p-4 rounded-lg shadow border-l-4 border-red-500">
+            <div class="text-xs font-bold text-gray-500 uppercase">Canceladas</div>
+            <div class="text-2xl font-bold text-gray-800">{{ canceladas }}</div>
+        </div>
+        <div class="bg-white p-4 rounded-lg shadow border-l-4 border-gray-300">
+            <div class="text-xs font-bold text-gray-500 uppercase">Capacidade Total (Período)</div>
+            <div class="text-2xl font-bold text-gray-800">{{ total_possiveis }}</div>
+        </div>
+    </div>
+
+    <!-- Charts Row 1 -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Resource Usage -->
+        <div class="bg-white p-6 rounded-lg shadow flex flex-col items-center">
+            <h3 class="font-bold text-lg mb-6 text-gray-800 w-full border-b pb-2">Uso por Recurso (Qtd. Aulas)</h3>
+            <div class="w-full h-72">
+                <canvas id="chartRecursos"></canvas>
+            </div>
+        </div>
+        
+        <!-- Status Breakdown -->
+         <div class="bg-white p-6 rounded-lg shadow flex flex-col items-center">
+            <h3 class="font-bold text-lg mb-6 text-gray-800 w-full border-b pb-2">Status das Reservas</h3>
+            <div class="w-full h-72">
+                <canvas id="chartStatus"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row 2 -->
+    <div class="bg-white p-6 rounded-lg shadow flex flex-col items-center">
+         <h3 class="font-bold text-lg mb-6 text-gray-800 w-full border-b pb-2">Eficiência Global (Ocupação vs Capacidade)</h3>
+         <div class="w-full md:w-2/3 h-72">
+            <canvas id="chartEficiencia"></canvas>
+         </div>
+    </div>
+
+    <!-- Tables Row -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 page-break-inside-avoid">
+        <!-- Top Professors -->
+        <div class="bg-white p-6 rounded-lg shadow">
+            <h3 class="font-bold text-lg mb-4 text-gray-800 flex items-center gap-2">
+                🏆 Top 10 Professores
+            </h3>
+            <div class="overflow-hidden rounded-lg border">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="bg-gray-50 border-b">
+                            <th class="text-left p-3 font-semibold text-gray-600">Professor</th>
+                            <th class="text-right p-3 font-semibold text-gray-600">Reservas</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for nome, qtd in top_professores %}
+                        <tr class="border-b last:border-0 hover:bg-gray-50">
+                            <td class="p-3 truncate max-w-[200px]" title="{{ nome }}">{{ nome }}</td>
+                            <td class="text-right p-3 font-mono font-bold text-primary">{{ qtd }}</td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="2" class="p-4 text-center text-gray-500 italic">Sem dados no período</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Top Turmas -->
+        <div class="bg-white p-6 rounded-lg shadow">
+            <h3 class="font-bold text-lg mb-4 text-gray-800 flex items-center gap-2">
+                📚 Top 10 Turmas
+            </h3>
+            <div class="overflow-hidden rounded-lg border">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="bg-gray-50 border-b">
+                            <th class="text-left p-3 font-semibold text-gray-600">Turma</th>
+                            <th class="text-right p-3 font-semibold text-gray-600">Reservas</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for nome, qtd in top_turmas %}
+                        <tr class="border-b last:border-0 hover:bg-gray-50">
+                            <td class="p-3 truncate max-w-[200px]" title="{{ nome }}">{{ nome }}</td>
+                            <td class="text-right p-3 font-mono font-bold text-indigo-600">{{ qtd }}</td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="2" class="p-4 text-center text-gray-500 italic">Sem dados no período</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- Data Injection ---
+    const recursosLabels = [{% for r in uso_recursos_data %}"{{ r[0] }}",{% endfor %}];
+    const recursosData = [{% for r in uso_recursos_data %}{{ r[1] }},{% endfor %}];
+
+    const stats = {
+        realizadas: {{ realizadas }},
+        nao_realizadas: {{ nao_realizadas }},
+        canceladas: {{ canceladas }},
+        possiveis: {{ total_possiveis }}
+    };
+
+    // --- Chart 1: Recursos (Pie) ---
+    new Chart(document.getElementById('chartRecursos'), {
+        type: 'pie',
+        data: {
+            labels: recursosLabels,
+            datasets: [{
+                data: recursosData,
+                backgroundColor: [
+                    '#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#6366F1'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'right' }
+            }
+        }
+    });
+
+    // --- Chart 2: Status Breakdown (Doughnut) ---
+    new Chart(document.getElementById('chartStatus'), {
+        type: 'doughnut',
+        data: {
+            labels: ['Realizadas', 'Não Concretizadas', 'Canceladas'],
+            datasets: [{
+                data: [stats.realizadas, stats.nao_realizadas, stats.canceladas],
+                backgroundColor: ['#10B981', '#F59E0B', '#EF4444']
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'right' }
+            }
+        }
+    });
+
+    // --- Chart 3: Eficiência (Bar/Pie Mixed) ---
+    // User asked for "Reservas Possíveis X reservas realzidas X reservas não concretizadasX reservas canceladas"
+    // A bar chart might be better to compare Totals, but user asked for "gráfico poizza" in one context, 
+    // but clearly comparing Total Possible vs Parts is hard in a single Pie unless "Available" is the slice.
+    
+    // Let's calculate "Available/Unused" slots
+    const totalOccupied = stats.realizadas + stats.nao_realizadas; // Canceladas usually frees up slot, but for historical stats maybe we count them? 
+    // Usually Cancelled frees the slot. So 'Available' = Possible - (Realized + NotRealized).
+    // Note: 'Cancelada' stays in DB but frees slot logic in some systems. Here we just show the numbers.
+    
+    const unused = Math.max(0, stats.possiveis - (stats.realizadas + stats.nao_realizadas));
+
+    new Chart(document.getElementById('chartEficiencia'), {
+        type: 'pie',
+        data: {
+            labels: ['Realizadas', 'Não Concretizadas', 'Disponíveis/Livres'],
+            datasets: [{
+                data: [stats.realizadas, stats.nao_realizadas, unused],
+                backgroundColor: ['#10B981', '#F59E0B', '#E5E7EB']
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                title: {
+                    display: true,
+                    text: `Capacidade Total: ${stats.possiveis} Aulas`
+                }
+            }
+        }
+    });
+
+    // --- PDF Export ---
+    async function exportPDF() {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF('l', 'mm', 'a4'); // Landscape
+
+        // Configurações de Layout Otimizado para Tamanho Máximo
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const pageHeight = doc.internal.pageSize.getHeight();
+        const margin = 5; // Margem mínima
+        
+        // Helper para adicionar página
+        function addMetricPage(title, canvasId, dataLines) {
+            // 1. Título (Discreto no topo)
+            doc.setFontSize(14);
+            doc.setTextColor(40, 40, 40);
+            doc.text(title, margin, margin + 5);
+            
+            // 2. Gráfico (Maximizando a área)
+            const canvas = document.getElementById(canvasId);
+            if (canvas) {
+                const tempCanvas = document.createElement('canvas');
+                const scale = 3; 
+                tempCanvas.width = canvas.width * scale;
+                tempCanvas.height = canvas.height * scale;
+                const ctx = tempCanvas.getContext('2d');
+                ctx.scale(scale, scale);
+                ctx.fillStyle = '#FFFFFF';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.drawImage(canvas, 0, 0);
+                
+                const imgData = tempCanvas.toDataURL('image/jpeg', 1.0);
+                
+                // Área disponível: Topo logo abaixo do título, até o rodapé mínimo
+                const startY = margin + 8;
+                const availableHeight = pageHeight - startY - 10; // Deixa 10mm no rodapé
+                const availableWidth = pageWidth - (margin * 2);
+                
+                // Calcular dimensões para caber na área, mantendo proporção
+                // Como queremos "aumentar ainda mais", vamos forçar o uso da altura disponível
+                // (Geralmente em landscape a altura é o limitante para gráficos quadrados/circulares)
+                let finalHeight = availableHeight;
+                let finalWidth = (canvas.width / canvas.height) * finalHeight;
+                
+                // Se por acaso ficar mais largo que a página (raro em landscape para gráficos normais), ajusta
+                if (finalWidth > availableWidth) {
+                    finalWidth = availableWidth;
+                    finalHeight = (canvas.height / canvas.width) * finalWidth;
+                }
+
+                // Centralizar na página
+                const xPos = (pageWidth - finalWidth) / 2;
+                
+                doc.addImage(imgData, 'JPEG', xPos, startY, finalWidth, finalHeight);
+            }
+
+            // 3. Dados Numéricos (Sobreposto no canto inferior direito ou lateral)
+            // Para garantir que não tape o gráfico, colocamos no canto extremo
+            // Gráficos redondos (Pie/Doughnut) deixam os cantos livres.
+            
+            doc.setFontSize(11);
+            doc.setTextColor(0, 0, 0);
+            
+            // Posição base: canto inferior direito, com margem
+            const dataBlockRightX = pageWidth - margin - 5;
+            const dataBlockBottomY = pageHeight - margin - 8; // Acima do footer
+            
+            let yPos = dataBlockBottomY - (dataLines.length * 5); 
+            
+            // Fundo semi-transparente para leitura (opcional, mas bom se sobrepor)
+            // Mas como é PDF, desenhar um retangulo branco atrás do texto ajuda
+            // Vamos desenhar um box branco atrás dos dados para garantir leitura
+            const textBlockHeight = (dataLines.length * 5) + 4;
+            const maxLineWidth = 80; // Estimetiva
+            // doc.setFillColor(255, 255, 255);
+            // doc.rect(dataBlockRightX - maxLineWidth, yPos - 4, maxLineWidth, textBlockHeight, 'F');
+
+            dataLines.forEach(line => {
+                if (line.startsWith('##')) {
+                    doc.setFont(undefined, 'bold');
+                    doc.text(line.replace('##', ''), dataBlockRightX, yPos, { align: 'right' });
+                    doc.setFont(undefined, 'normal');
+                } else if (line.trim() !== '') {
+                    doc.text(line, dataBlockRightX, yPos, { align: 'right' });
+                }
+                yPos += 5;
+            });
+
+            // 4. Footer discreto
+            doc.setFontSize(7);
+            doc.setTextColor(150, 150, 150);
+            const now = new Date();
+            const footerText = `Agenda EduLabTech - ${now.toLocaleDateString('pt-BR')} ${now.toLocaleTimeString('pt-BR')}`;
+            doc.text(footerText, margin, pageHeight - margin);
+        }
+
+        // 1. Página: Uso por Recurso
+        const recursosDataLines = recursosLabels.map((l, i) => `${l}: ${recursosData[i]} reservas`);
+        addMetricPage('Uso por Recurso', 'chartRecursos', recursosDataLines);
+
+        // 2. Página: Status das Reservas
+        doc.addPage();
+        const statusDataLines = [
+            `Realizadas: ${stats.realizadas}`,
+            `Não Concretizadas: ${stats.nao_realizadas}`,
+            `Canceladas: ${stats.canceladas}`,
+            '',
+            `##Total de Reservas: ${stats.realizadas + stats.nao_realizadas + stats.canceladas}`
+        ];
+        addMetricPage('Status das Reservas', 'chartStatus', statusDataLines);
+
+        // 3. Página: Eficiência Global
+        doc.addPage();
+        const eficienciaDataLines = [
+            `Capacidade Total: ${stats.possiveis}`,
+            `Total Ocupado: ${stats.realizadas + stats.nao_realizadas}`,
+            `Disponibilidade: ${Math.max(0, stats.possiveis - (stats.realizadas + stats.nao_realizadas))}`,
+            '',
+            `##Taxa de Ocupação: ${Math.round(((stats.realizadas + stats.nao_realizadas) / stats.possiveis) * 100) || 0}%`
+        ];
+        addMetricPage('Eficiência Global', 'chartEficiencia', eficienciaDataLines);
+
+        doc.save('relatorio_metricas.pdf');
+    }
+</script>
+
+<style>
+    @media print {
+        .no-print { display: none !important; }
+        .page-break-inside-avoid { page-break-inside: avoid; }
+    }
+</style>
+{% endblock %}

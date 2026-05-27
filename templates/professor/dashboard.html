@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Dashboard - Professor{% endblock %}
+{% block page_title %}Área do Professor{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h2>Bem-vindo, {{ usuario.nome }}</h2>
+    <p class="text-muted">Utilize o painel para solicitar e acompanhar suas reservas de recursos.</p>
+
+    <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="p-4 border rounded bg-blue-50">
+            <h3 class="font-bold text-primary mb-2">Minhas Reservas</h3>
+            <p class="text-sm text-muted mb-4">Visualize suas solicitações pendentes e aprovadas.</p>
+            <a href="{{ url_for('professor.minhas_reservas') }}" class="btn btn-primary text-sm">Ver Reservas</a>
+        </div>
+        <div class="p-4 border rounded bg-green-50">
+            <h3 class="font-bold text-success mb-2">Nova Solicitação</h3>
+            <p class="text-sm text-muted mb-4">Reserve laboratórios ou equipamentos para suas aulas.</p>
+            <a href="{{ url_for('professor.nova_reserva') }}" class="btn btn-primary text-sm">Criar Reserva</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

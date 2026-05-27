@@ -1,0 +1,53 @@
+<!-- templates/gestor_regional/editar_escola.html -->
+{% extends "base.html" %}
+{% block title %}Editar Escola{% endblock %}
+{% block content %}
+<div class="card">
+    <h2>Editar Escola: {{ escola.nome }}</h2>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, msg in messages %}
+                <div style="margin: 1rem 0; padding: 0.75rem; border-radius: 6px; 
+                    {% if category == 'error' %}background: #ffebee; color: #c62828;
+                    {% else %}background: #e8f5e9; color: #2e7d32;{% endif %}">
+                    {{ msg }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <form method="POST">
+        <div style="margin-bottom: 1.25rem;">
+            <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Nome da Escola *</label>
+            <input type="text" name="nome_escola" value="{{ escola.nome }}" required style="width: 100%; padding: 0.6rem; border: 1px solid #ccc; border-radius: 6px;">
+        </div>
+
+        <h3 style="margin: 1.5rem 0 1rem;">Gestores Atuais</h3>
+        {% for g in gestores %}
+        <div style="background: #f9f9f9; padding: 1rem; margin-bottom: 1rem; border-radius: 6px;">
+            <input type="text" name="nome_gestor_{{ g.id }}" value="{{ g.nome }}" placeholder="Nome" style="width: 100%; margin-bottom: 0.5rem; padding: 0.4rem; border: 1px solid #ccc; border-radius: 4px;">
+            <input type="email" name="email_gestor_{{ g.id }}" value="{{ g.email }}" placeholder="E-mail" style="width: 100%; margin-bottom: 0.5rem; padding: 0.4rem; border: 1px solid #ccc; border-radius: 4px;">
+            <input type="text" name="telefone_gestor_{{ g.id }}" value="{{ g.telefone or '' }}" placeholder="Telefone" style="width: 100%; margin-bottom: 0.5rem; padding: 0.4rem; border: 1px solid #ccc; border-radius: 4px;">
+            <input type="password" name="senha_gestor_{{ g.id }}" placeholder="Nova senha (opcional)" style="width: 100%; padding: 0.4rem; border: 1px solid #ccc; border-radius: 4px;">
+        </div>
+        {% endfor %}
+
+        <h3 style="margin: 1.5rem 0 1rem;">Adicionar Novo Gestor (opcional)</h3>
+        <div style="background: #f0f7ff; padding: 1rem; border-radius: 6px;">
+            <input type="text" name="novo_nome_gestor" placeholder="Nome do novo gestor" style="width: 100%; margin-bottom: 0.5rem; padding: 0.4rem; border: 1px solid #ccc; border-radius: 4px;">
+            <input type="email" name="novo_email_gestor" placeholder="E-mail" style="width: 100%; margin-bottom: 0.5rem; padding: 0.4rem; border: 1px solid #ccc; border-radius: 4px;">
+            <input type="text" name="novo_telefone_gestor" placeholder="Telefone" style="width: 100%; margin-bottom: 0.5rem; padding: 0.4rem; border: 1px solid #ccc; border-radius: 4px;">
+            <input type="password" name="nova_senha_novo_gestor" placeholder="Senha" style="width: 100%; padding: 0.4rem; border: 1px solid #ccc; border-radius: 4px;">
+        </div>
+
+        <button type="submit" style="background: #e67e22; color: white; padding: 0.75rem 1.5rem; border: none; border-radius: 6px; font-weight: 600; margin-top: 1rem;">Salvar Alterações</button>
+        <a href="{{ url_for('dashboard') }}" style="margin-left: 1rem; color: #3498db; text-decoration: none;">Cancelar</a>
+    </form>
+</div>
+
+<!-- Botão de Voltar ao Dashboard -->
+<div style="margin-top: 1.5rem;">
+    <a href="{{ url_for('dashboard') }}" style="color: #3498db; text-decoration: none; font-weight: 600;">&larr; Voltar ao Dashboard</a>
+</div>
+{% endblock %}

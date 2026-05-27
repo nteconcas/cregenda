@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}Dashboard - Gestor Geral{% endblock %}
+{% block page_title %}Visão Geral do Sistema{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h2>Bem-vindo, {{ usuario.nome }}</h2>
+    <p class="text-muted">Você gerencia todas as contas regionais do sistema.</p>
+</div>
+
+<!-- Listagem de Regionais -->
+<div class="card">
+    <div class="flex justify-between items-center mb-4">
+        <h3>Regionais Cadastradas</h3>
+        <a href="{{ url_for('gestor_geral.cadastrar_gestor_regional') }}" class="btn btn-primary text-sm">
+            ➕ Novo Gestor Regional
+        </a>
+    </div>
+
+    {% if dados_regioes %}
+        <div class="grid grid-cols-1 gap-4">
+        {% for item in dados_regioes %}
+            <div class="border rounded p-4 bg-gray-50">
+                <div class="flex justify-between items-center mb-4">
+                    <h4 class="font-bold text-lg text-primary">{{ item.regiao.nome }}</h4>
+                    <a href="{{ url_for('gestor_geral.cadastrar_gestor_regional') }}?regiao_id={{ item.regiao.id }}" 
+                       class="text-sm text-success font-bold hover:underline">
+                        ➕ Adicionar Gestor
+                    </a>
+                </div>
+
+                {% if item.gestores %}
+                    <div class="table-responsive bg-white rounded border">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Nome</th>
+                                    <th>E-mail</th>
+                                    <th>Telefone</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for g in item.gestores %}
+                                <tr>
+                                    <td>{{ g.nome }}</td>
+                                    <td>{{ g.email }}</td>
+                                    <td>{{ g.telefone or '—' }}</td>
+                                    <td>
+                                        <a href="{{ url_for('gestor_geral.editar_gestor_regional', id=g.id) }}" 
+                                           class="text-primary font-bold hover:underline text-sm">Editar</a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p class="text-sm text-muted italic">Nenhum gestor cadastrado nesta regional.</p>
+                {% endif %}
+            </div>
+        {% endfor %}
+        </div>
+    {% else %}
+        <div class="p-4 bg-gray-50 rounded text-center text-muted">
+            Nenhuma regional cadastrada ainda.
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

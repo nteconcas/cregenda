@@ -1,0 +1,75 @@
+<!-- templates/gestor_escolar/turmas.html -->
+{% extends "base.html" %}
+{% block title %}Turmas{% endblock %}
+{% block content %}
+    <div class="flex justify-between items-center mb-6">
+        <h2 class="text-xl font-bold text-gray-800">Turmas</h2>
+        <a href="{{ url_for('gestor_escolar.cadastrar_turma') }}" class="btn btn-success shadow-sm">
+            ➕ Nova Turma
+        </a>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, msg in messages %}
+                <div class="alert alert-{{ category }} mb-6">
+                    {{ msg }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    {% if turmas %}
+        {% set turnos = ['Matutino', 'Vespertino', 'Noturno'] %}
+        {% for turno in turnos %}
+            {% set turmas_turno = turmas | selectattr('turno', 'equalto', turno) | list %}
+            {% if turmas_turno %}
+                <h3 class="text-lg font-bold text-gray-700 mt-8 mb-4 border-b pb-2 flex items-center gap-2">
+                    {% if turno == 'Matutino' %}🌅{% elif turno == 'Vespertino' %}☀️{% else %}🌙{% endif %}
+                    {{ turno }}
+                </h3>
+                
+                <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                    {% for t in turmas_turno %}
+                    <div class="card hover:shadow-lg transition-shadow duration-200 flex flex-col justify-between h-full border-l-4 border-l-indigo-500 p-0 overflow-hidden">
+                        <div class="p-3">
+                            <div class="flex items-center justify-between mb-1">
+                                <h4 class="font-bold text-lg text-gray-900 truncate" title="{{ t.nome }}">{{ t.nome }}</h4>
+                            </div>
+                            <div class="text-xs text-gray-500 font-medium">
+                                {{ t.turno }}
+                            </div>
+                        </div>
+                        
+                        <div class="bg-gray-50 p-2 border-t flex gap-1">
+                            <a href="{{ url_for('gestor_escolar.editar_turma', id=t.id) }}" class="btn btn-secondary btn-xs flex-1 justify-center text-xs py-1" title="Editar">
+                                ✏️
+                            </a>
+                            <form method="POST" action="{{ url_for('gestor_escolar.excluir_turma', id=t.id) }}" class="flex-1">
+                                <button type="submit" onclick="return confirm('Tem certeza que deseja excluir a turma {{ t.nome }}?')" class="btn btn-outline-danger btn-xs w-full justify-center text-xs py-1" title="Excluir">
+                                    🗑️
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endfor %}
+    {% else %}
+        <div class="card p-8 text-center bg-gray-50 border-dashed border-2 border-gray-300">
+            <div class="text-4xl mb-4">👥</div>
+            <h3 class="text-lg font-medium text-gray-900 mb-2">Nenhuma turma encontrada</h3>
+            <p class="text-gray-500 mb-6">Cadastre as turmas da escola para iniciar o agendamento.</p>
+            <a href="{{ url_for('gestor_escolar.cadastrar_turma') }}" class="btn btn-primary">
+                Cadastrar Primeira Turma
+            </a>
+        </div>
+    {% endif %}
+
+    <div class="mt-8 border-t pt-4">
+        <a href="{{ url_for('dashboard') }}" class="flex items-center text-primary font-medium hover:underline">
+            <span class="mr-2">&larr;</span> Voltar ao Dashboard
+        </a>
+    </div>
+{% endblock %}

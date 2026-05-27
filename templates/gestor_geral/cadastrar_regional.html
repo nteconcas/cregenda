@@ -1,0 +1,82 @@
+<!-- templates/gestor_geral/cadastrar_regional.html -->
+{% extends "base.html" %}
+{% block title %}Cadastrar Gestor Regional - CRE{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h2>Cadastrar Novo Gestor Regional</h2>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, msg in messages %}
+                <div style="margin: 1rem 0; padding: 0.75rem; border-radius: 6px; 
+                    {% if category == 'error' %}background: #ffebee; color: #c62828;
+                    {% else %}background: #e8f5e9; color: #2e7d32;{% endif %}">
+                    {{ msg }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <form method="POST">
+        <div style="margin-bottom: 1.25rem;">
+            <label for="nome" style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Nome Completo</label>
+            <input type="text" id="nome" name="nome" required style="width: 100%; padding: 0.6rem; border: 1px solid #ccc; border-radius: 6px;">
+        </div>
+
+        <div style="margin-bottom: 1.25rem;">
+            <label for="email" style="display: block; margin-bottom: 0.5rem; font-weight: 600;">E-mail</label>
+            <input type="email" id="email" name="email" required style="width: 100%; padding: 0.6rem; border: 1px solid #ccc; border-radius: 6px;">
+        </div>
+
+        <div style="margin-bottom: 1.25rem;">
+            <label for="telefone" style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Telefone (opcional)</label>
+            <input type="text" id="telefone" name="telefone" placeholder="(00) 00000-0000" style="width: 100%; padding: 0.6rem; border: 1px solid #ccc; border-radius: 6px;">
+        </div>
+
+        <div style="margin-bottom: 1.25rem;">
+            <label for="senha" style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Senha</label>
+            <input type="password" id="senha" name="senha" required style="width: 100%; padding: 0.6rem; border: 1px solid #ccc; border-radius: 6px;">
+        </div>
+
+        <div style="margin-bottom: 1.25rem;">
+            <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Regional</label>
+            <div>
+                <input type="radio" id="regiao_existente" name="opcao_regiao" value="existente" checked onchange="toggleRegiao(true)">
+                <label for="regiao_existente" style="margin-right: 1rem;">Usar regional existente</label>
+                <input type="radio" id="regiao_nova" name="opcao_regiao" value="nova" onchange="toggleRegiao(false)">
+                <label for="regiao_nova">Criar nova regional</label>
+            </div>
+        </div>
+
+        <!-- Lista de regiões existentes -->
+        <div id="selecionar_regiao" style="margin-bottom: 1.25rem;">
+            <select name="regiao_nome" required style="width: 100%; padding: 0.6rem; border: 1px solid #ccc; border-radius: 6px;">
+                <option value="">Selecione uma regional</option>
+                {% for reg in regioes %}
+                    <option value="{{ reg.nome }}">{{ reg.nome }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- Campo para nova regional -->
+        <div id="nova_regiao" style="margin-bottom: 1.25rem; display: none;">
+            <input type="text" name="nova_regiao" placeholder="Nome da nova regional" style="width: 100%; padding: 0.6rem; border: 1px solid #ccc; border-radius: 6px;">
+        </div>
+
+        <button type="submit" style="background: #27ae60; color: white; padding: 0.75rem 1.5rem; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;">
+            Cadastrar Gestor Regional
+        </button>
+        <a href="{{ url_for('gestor_geral.dashboard') }}" style="display: inline-block; margin-left: 1rem; color: #3498db; text-decoration: none;">Voltar</a>
+    </form>
+</div>
+
+<script>
+    function toggleRegiao(usarExistente) {
+        document.getElementById('selecionar_regiao').style.display = usarExistente ? 'block' : 'none';
+        document.getElementById('nova_regiao').style.display = usarExistente ? 'none' : 'block';
+        document.querySelector('select[name="regiao_nome"]').required = usarExistente;
+        document.querySelector('input[name="nova_regiao"]').required = !usarExistente;
+    }
+</script>
+{% endblock %}

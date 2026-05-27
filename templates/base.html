@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Edulabtech{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#4F46E5',
+                        secondary: '#64748B',
+                        success: '#10B981',
+                        danger: '#EF4444',
+                        warning: '#F59E0B',
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar {% if usuario.papel == 'professor' %}hidden md:flex{% endif %}">
+            <div class="sidebar-header">
+                Edulabtech
+            </div>
+            
+            <nav class="sidebar-nav">
+                <div class="nav-section-title">Menu Principal</div>
+                
+                <a href="{{ url_for('dashboard') }}" class="nav-item">
+                    🏠 Dashboard
+                </a>
+
+                {% if usuario.papel == 'gestor_geral' %}
+                    <div class="nav-section-title">Gestão Geral</div>
+                    <a href="{{ url_for('gestor_geral.cadastrar_gestor_regional') }}" class="nav-item">
+                        🌍 Regionais
+                    </a>
+                {% endif %}
+
+                {% if usuario.papel == 'gestor_regional' %}
+                    <div class="nav-section-title">Regional</div>
+                    <a href="{{ url_for('gestor_regional.cadastrar_escola') }}" class="nav-item">
+                        🏫 Escolas
+                    </a>
+                {% endif %}
+
+                {% if usuario.papel == 'gestor_escolar' %}
+                    <div class="nav-section-title">Escola</div>
+                    <a href="{{ url_for('gestor_escolar.configuracoes') }}" class="nav-item">
+                        ⚙️ Configurações
+                    </a>
+                {% endif %}
+                
+                {% if usuario.papel == 'professor' %}
+                     <div class="nav-section-title">Professor</div>
+                     <a href="{{ url_for('professor.nova_reserva') }}" class="nav-item">
+                        ➕ Nova Reserva
+                     </a>
+                     <a href="{{ url_for('professor.minhas_reservas') }}" class="nav-item">
+                        📅 Minhas Reservas
+                     </a>
+                     <a href="{{ url_for('professor.solicitar_vinculo') }}" class="nav-item">
+                        🔗 Solicitar Vínculo
+                     </a>
+                {% endif %}
+
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="user-profile">
+                    <div class="user-avatar">
+                        {{ usuario.nome[0] | upper }}
+                    </div>
+                    <div class="user-info">
+                        <span class="user-name">{{ usuario.nome }}</span>
+                        <span class="user-role">
+                            {% if usuario.papel == 'gestor_geral' %}Gestor Geral
+                            {% elif usuario.papel == 'gestor_regional' %}Gestor Regional
+                            {% elif usuario.papel == 'gestor_escolar' %}Gestor Escolar
+                            {% else %}Professor{% endif %}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="topbar">
+                <div class="flex items-center gap-3">
+                    {% if usuario.papel == 'professor' %}
+                    <button onclick="toggleSidebar()" class="md:hidden text-indigo-600 hover:text-indigo-800 transition-colors mr-1" title="Menu Principal">
+                        <i class="fas fa-bars text-xl"></i>
+                    </button>
+                    <a href="{{ url_for('dashboard') }}" class="md:hidden text-indigo-600 hover:text-indigo-800 transition-colors" title="Ir para o Dashboard">
+                        <i class="fas fa-home text-xl"></i>
+                    </a>
+                    {% endif %}
+                    <div class="page-title">
+                        {% block page_title %}Painel de Controle{% endblock %}
+                    </div>
+                </div>
+                <div>
+                    <a href="{{ url_for('auth.logout') }}" class="btn btn-secondary text-sm">
+                        Sair
+                    </a>
+                </div>
+            </header>
+
+            <div class="content-wrapper">
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, msg in messages %}
+                            <div class="alert alert-{{ category }}">
+                                {{ msg }}
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+
+                {% block content %}{% endblock %}
+            </div>
+        </main>
+    </div>
+    <script>
+        function toggleSidebar() {
+            const sidebar = document.querySelector('.sidebar');
+            const isHidden = sidebar.classList.contains('hidden');
+            
+            if (isHidden) {
+                // Open sidebar
+                sidebar.classList.remove('hidden');
+                sidebar.classList.add('mobile-overlay');
+                
+                // Add backdrop
+                const backdrop = document.createElement('div');
+                backdrop.id = 'sidebar-backdrop';
+                backdrop.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 90;';
+                backdrop.onclick = toggleSidebar;
+                document.body.appendChild(backdrop);
+            } else {
+                // Close sidebar
+                sidebar.classList.add('hidden');
+                sidebar.classList.remove('mobile-overlay');
+                
+                // Remove backdrop
+                const backdrop = document.getElementById('sidebar-backdrop');
+                if (backdrop) backdrop.remove();
+            }
+        }
+    </script>
+</body>
+</html>

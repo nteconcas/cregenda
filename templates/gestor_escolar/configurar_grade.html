@@ -1,0 +1,64 @@
+<!-- templates/gestor_escolar/configurar_grade.html -->
+{% extends "base.html" %}
+{% block title %}Configurar Grade Horária{% endblock %}
+{% block content %}
+<div class="card">
+    <h2>Configurar Grade Horária</h2>
+    <p>Defina os dias, turnos e o número de aulas por turno.</p>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, msg in messages %}
+                <div style="margin: 1rem 0; padding: 0.75rem; border-radius: 6px; 
+                    {% if category == 'error' %}background: #ffebee; color: #c62828;
+                    {% else %}background: #e8f5e9; color: #2e7d32;{% endif %}">
+                    {{ msg }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <form method="POST">
+        <div style="margin-bottom: 1.5rem;">
+            <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Dias da Semana</label>
+            {% for valor, nome in dias_semana %}
+                <label style="display: inline-block; margin-right: 1rem; margin-bottom: 0.5rem;">
+                    <input type="checkbox" name="dias" value="{{ valor }}"> {{ nome }}
+                </label>
+            {% endfor %}
+        </div>
+
+        <div style="margin-bottom: 1.5rem;">
+            <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Turnos</label>
+            <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+                {% for turno in turnos %}
+                    <label style="display: inline-block; background: #f1f3f5; padding: 0.3rem 0.6rem; border-radius: 4px;">
+                        <input type="checkbox" name="turnos" value="{{ turno }}"> {{ turno }}
+                    </label>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div style="margin-bottom: 1.5rem;">
+            <label for="num_aulas" style="display: block; margin-bottom: 0.5rem; font-weight: 600;">
+                Número de Aulas por Turno (1 a {{ max_aulas }})
+            </label>
+            <input type="number" id="num_aulas" name="num_aulas" min="1" max="{{ max_aulas }}" 
+                   value="5" required 
+                   style="width: 100%; max-width: 120px; padding: 0.6rem; border: 1px solid #ccc; border-radius: 6px;">
+            <p style="margin-top: 0.5rem; color: #7f8c8d; font-size: 0.9rem;">
+                Ex: Se digitar "5", serão criadas: Aula 1, Aula 2, Aula 3, Aula 4, Aula 5 em todos os turnos selecionados.
+            </p>
+        </div>
+
+        <button type="submit" style="background: #27ae60; color: white; padding: 0.75rem 1.5rem; border: none; border-radius: 6px; font-weight: 600;">
+            Salvar Grade Horária
+        </button>
+        <a href="{{ url_for('gestor_escolar.grade') }}" style="margin-left: 1rem; color: #3498db; text-decoration: none;">Cancelar</a>
+    </form>
+
+    <div style="margin-top: 1.5rem;">
+        <a href="{{ url_for('dashboard') }}" style="color: #3498db; text-decoration: none; font-weight: 600;">&larr; Voltar ao Dashboard</a>
+    </div>
+</div>
+{% endblock %}

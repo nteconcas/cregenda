@@ -1,0 +1,48 @@
+<!-- templates/gestor_regional/cadastrar_escola.html -->
+{% extends "base.html" %}
+{% block title %}Cadastrar Escola{% endblock %}
+{% block content %}
+<div class="card">
+    <h2>Cadastrar Nova Escola</h2>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, msg in messages %}
+                <div style="margin: 1rem 0; padding: 0.75rem; border-radius: 6px; 
+                    {% if category == 'error' %}background: #ffebee; color: #c62828;
+                    {% else %}background: #e8f5e9; color: #2e7d32;{% endif %}">
+                    {{ msg }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <form method="POST">
+        <div style="margin-bottom: 1.25rem;">
+            <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Nome da Escola</label>
+            <input type="text" name="nome_escola" required style="width: 100%; padding: 0.6rem; border: 1px solid #ccc; border-radius: 6px;">
+        </div>
+
+        <h3 style="margin: 1.5rem 0 1rem;">Gestor Escolar Inicial</h3>
+        <div style="margin-bottom: 1.25rem;">
+            <label>Nome</label>
+            <input type="text" name="nome_gestor" required style="width: 100%; padding: 0.6rem; border: 1px solid #ccc; border-radius: 6px;">
+        </div>
+        <div style="margin-bottom: 1.25rem;">
+            <label>E-mail</label>
+            <input type="email" name="email_gestor" required style="width: 100%; padding: 0.6rem; border: 1px solid #ccc; border-radius: 6px;">
+        </div>
+        <div style="margin-bottom: 1.25rem;">
+            <label>Telefone (opcional)</label>
+            <input type="text" name="telefone_gestor" placeholder="(00) 00000-0000" style="width: 100%; padding: 0.6rem; border: 1px solid #ccc; border-radius: 6px;">
+        </div>
+        <div style="margin-bottom: 1.25rem;">
+            <label>Senha</label>
+            <input type="password" name="senha_gestor" required style="width: 100%; padding: 0.6rem; border: 1px solid #ccc; border-radius: 6px;">
+        </div>
+
+        <button type="submit" style="background: #27ae60; color: white; padding: 0.75rem 1.5rem; border: none; border-radius: 6px; font-weight: 600;">Cadastrar Escola</button>
+        <a href="{{ url_for('dashboard') }}" style="margin-left: 1rem; color: #3498db; text-decoration: none;">Cancelar</a>
+    </form>
+</div>
+{% endblock %}

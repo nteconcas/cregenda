@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block title %}Solicitar Vínculo - Professor{% endblock %}
+{% block content %}
+    <div class="flex flex-col md:flex-row justify-between items-center mb-6">
+        <h2 class="text-xl font-bold text-gray-800 mb-4 md:mb-0">Meus Vínculos Escolares</h2>
+        <a href="{{ url_for('dashboard') }}" class="text-primary hover:underline">Voltar ao Dashboard</a>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, msg in messages %}
+                <div class="alert alert-{{ category }} mb-6">
+                    {{ msg }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <!-- Card: Solicitar Novo Vínculo -->
+        <div class="card h-fit">
+            <h3 class="text-lg font-bold text-gray-800 mb-4 border-b pb-2">Solicitar Novo Vínculo</h3>
+            <p class="text-gray-600 mb-4 text-sm">
+                Selecione uma escola abaixo para solicitar acesso aos recursos. O gestor da escola precisará aprovar sua solicitação.
+            </p>
+            
+            <form method="POST" class="space-y-4">
+                <div>
+                    <label for="escola_id" class="block text-sm font-medium text-gray-700 mb-1">Escola</label>
+                    <select name="escola_id" id="escola_id" class="w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring focus:ring-primary focus:ring-opacity-50 p-2 border" required>
+                        <option value="">-- Selecione uma Escola --</option>
+                        {% for escola in escolas %}
+                            <option value="{{ escola.id }}">{{ escola.nome }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <button type="submit" class="btn btn-primary w-full justify-center">
+                    Enviar Solicitação
+                </button>
+            </form>
+            
+            {% if not escolas %}
+                <p class="text-yellow-600 text-sm mt-4 bg-yellow-50 p-2 rounded border border-yellow-200">
+                    ⚠️ Nenhuma escola disponível para solicitação no momento. Você já pode estar vinculado a todas as escolas disponíveis.
+                </p>
+            {% endif %}
+        </div>
+
+        <!-- Card: Minhas Solicitações e Vínculos -->
+        <div class="card h-fit">
+            <h3 class="text-lg font-bold text-gray-800 mb-4 border-b pb-2">Histórico de Solicitações</h3>
+            
+            {% if solicitacoes %}
+                <div class="space-y-4">
+                    {% for s in solicitacoes %}
+                    <div class="flex items-center justify-between p-3 rounded border {% if s.status == 'aprovado' %}bg-green-50 border-green-200{% elif s.status == 'recusado' %}bg-red-50 border-red-200{% else %}bg-yellow-50 border-yellow-200{% endif %}">
+                        <div>
+                            <h4 class="font-bold text-gray-900">{{ s.escola.nome }}</h4>
+                            <p class="text-xs text-gray-500">Solicitado em: {{ s.data_solicitacao.strftime('%d/%m/%Y') }}</p>
+                        </div>
+                        <div class="flex items-center">
+                            {% if s.status == 'aprovado' %}
+                                <span class="badge badge-success">Aprovado</span>
+                            {% elif s.status == 'recusado' %}
+                                <span class="badge badge-danger">Recusado</span>
+                            {% else %}
+                                <span class="badge badge-warning">Pendente</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="text-gray-500 text-center py-8">Você ainda não fez nenhuma solicitação de vínculo.</p>
+            {% endif %}
+            
+            <div class="mt-6 pt-4 border-t">
+                <h4 class="font-bold text-gray-800 mb-2 text-sm">Escola Principal (Cadastro)</h4>
+                {% if usuario.escola_id %}
+                    <div class="p-3 rounded bg-blue-50 border border-blue-200 flex items-center justify-between">
+                        <span class="font-medium text-blue-900">
+                            {% set home = escolas|selectattr("id", "equalto", usuario.escola_id)|first %}
+                            {# A lista 'escolas' foi filtrada no controller para remover a home school, então precisamos pegar do usuário ou fazer query se necessário. Mas o controller não passou a home school object, só o ID. #}
+                            {# Na verdade, vamos assumir que o usuário sabe qual é sua escola principal, ou tentar exibir se tivermos o objeto. #}
+                            {# O ideal seria passar a escola principal no context, mas vamos simplificar. #}
+                            Escola de Origem (ID: {{ usuario.escola_id }})
+                        </span>
+                        <span class="badge bg-blue-200 text-blue-800">Principal</span>
+                    </div>
+                {% else %}
+                     <p class="text-gray-500 text-sm">Sem escola principal definida.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+{% endblock %}

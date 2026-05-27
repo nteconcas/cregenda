@@ -1,0 +1,9 @@
+Flask
+Flask-SQLAlchemy
+Flask-Login
+Werkzeug
+python-dotenv
+pymysql
+authlib
+requests
+gunicorn
