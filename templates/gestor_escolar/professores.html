@@ -33,14 +33,18 @@
     {% endwith %}
 
     {% if view == 'professores' %}
-        <div class="flex justify-end mb-4">
-            <a href="{{ url_for('gestor_escolar.cadastrar_professor') }}" class="btn btn-success shadow-sm">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
+            <div class="relative w-full sm:w-72">
+                <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+                <input type="text" id="searchProfessores" onkeyup="filterProfessores()" placeholder="Buscar professor..." class="pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 w-full">
+            </div>
+            <a href="{{ url_for('gestor_escolar.cadastrar_professor') }}" class="btn btn-success shadow-sm w-full sm:w-auto text-center">
                 ➕ Novo Professor
             </a>
         </div>
 
         {% if professores %}
-            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4" id="professoresGrid">
                 {% for p in professores %}
                 <div class="card hover:shadow-lg transition-shadow duration-200 flex flex-col justify-between h-full border-l-4 {% if p.ativo %}border-l-green-500{% else %}border-l-red-500{% endif %} p-0 overflow-hidden">
                     <div class="p-3">
@@ -81,8 +85,8 @@
                             <a href="{{ url_for('gestor_escolar.gerenciar_atribuicoes', id=p.id) }}" class="btn btn-primary btn-xs flex-grow justify-center text-xs py-1" title="Gerenciar Atribuições (Turmas/Disciplinas)">
                                 📚
                             </a>
-                            <form action="{{ url_for('gestor_escolar.desativar_professor_direto', id=p.id) }}" method="POST" onsubmit="return confirm('Tem certeza que deseja desativar este professor? Ele perderá o acesso ao painel.');" class="flex-shrink-0">
-                                <button type="submit" class="text-red-500 hover:text-red-700 hover:bg-red-50 p-1 rounded transition-colors" title="Desativar/Remover">
+                            <form action="{{ url_for('gestor_escolar.desativar_professor_direto', id=p.id) }}" method="POST" class="flex-shrink-0">
+                                <button type="button" onclick="showConfirm(event, 'Desativar Professor', 'Tem certeza que deseja desativar {{ p.nome|e }}? Ele perderá o acesso ao painel e suas reservas futuras serão canceladas.')" class="text-red-500 hover:text-red-700 hover:bg-red-50 p-1 rounded transition-colors" title="Desativar/Remover">
                                     ❌
                                 </button>
                             </form>
@@ -92,8 +96,8 @@
                             <a href="{{ url_for('gestor_escolar.gerenciar_atribuicoes', id=p.id) }}" class="btn btn-primary btn-xs flex-grow justify-center text-xs py-1" title="Gerenciar Atribuições (Turmas/Disciplinas)">
                                 📚 Atribuições
                             </a>
-                            <form action="{{ url_for('gestor_escolar.desvincular_professor', id=p.vinculo_id) }}" method="POST" onsubmit="return confirm('Tem certeza que deseja desvincular este professor?');" class="flex-shrink-0">
-                                <button type="submit" class="text-red-500 hover:text-red-700 hover:bg-red-50 p-1 rounded transition-colors" title="Desvincular">
+                            <form action="{{ url_for('gestor_escolar.desvincular_professor', id=p.vinculo_id) }}" method="POST" class="flex-shrink-0">
+                                <button type="button" onclick="showConfirm(event, 'Desvincular Professor', 'Tem certeza que deseja desvincular {{ p.nome|e }}? Reservas futuras serão canceladas.')" class="text-red-500 hover:text-red-700 hover:bg-red-50 p-1 rounded transition-colors" title="Desvincular">
                                     ❌
                                 </button>
                             </form>
@@ -171,4 +175,21 @@
             <span class="mr-2">&larr;</span> Voltar ao Dashboard
         </a>
     </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function filterProfessores() {
+    const input = document.getElementById('searchProfessores');
+    const filter = input.value.toLowerCase();
+    const grid = document.getElementById('professoresGrid');
+    const cards = grid.querySelectorAll('.card');
+    
+    cards.forEach(card => {
+        const nome = card.querySelector('h3').textContent.toLowerCase();
+        const email = card.querySelector('.space-y-1 span:nth-child(2)').textContent.toLowerCase();
+        card.style.display = (nome.includes(filter) || email.includes(filter)) ? '' : 'none';
+    });
+}
+</script>
 {% endblock %}

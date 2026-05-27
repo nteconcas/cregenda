@@ -131,28 +131,104 @@
             </div>
         </main>
     </div>
+    <!-- Modal de Confirmação -->
+    <div id="confirmModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4" style="background: rgba(0,0,0,0.5);">
+        <div class="bg-white rounded-xl shadow-2xl max-w-md w-full p-6 transform transition-all">
+            <div class="text-center">
+                <div class="mx-auto w-14 h-14 rounded-full bg-red-100 flex items-center justify-center mb-4">
+                    <i class="fas fa-exclamation-triangle text-red-500 text-2xl"></i>
+                </div>
+                <h3 class="text-lg font-bold text-gray-900 mb-2" id="confirmTitle">Tem certeza?</h3>
+                <p class="text-sm text-gray-500 mb-6" id="confirmMessage">Esta ação não poderá ser desfeita.</p>
+                <div class="flex gap-3 justify-center">
+                    <button onclick="closeConfirmModal()" class="px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium text-sm transition-colors">
+                        Cancelar
+                    </button>
+                    <button id="confirmBtn" class="px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium text-sm transition-colors shadow-sm">
+                        <i class="fas fa-trash-alt mr-1"></i> Confirmar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% block scripts %}{% endblock %}
+
     <script>
+        // === Modal de Confirmação ===
+        let confirmForm = null;
+        
+        function showConfirm(event, title, message) {
+            event.preventDefault();
+            confirmForm = event.target.closest('form');
+            document.getElementById('confirmTitle').textContent = title || 'Tem certeza?';
+            document.getElementById('confirmMessage').textContent = message || 'Esta ação não poderá ser desfeita.';
+            document.getElementById('confirmModal').classList.remove('hidden');
+        }
+        
+        function closeConfirmModal() {
+            document.getElementById('confirmModal').classList.add('hidden');
+            confirmForm = null;
+        }
+        
+        document.getElementById('confirmBtn').addEventListener('click', function() {
+            if (confirmForm) {
+                confirmForm.submit();
+            }
+            closeConfirmModal();
+        });
+        
+        // Fechar modal ao clicar fora
+        document.getElementById('confirmModal').addEventListener('click', function(e) {
+            if (e.target === this) closeConfirmModal();
+        });
+        
+        // Fechar modal com ESC
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') closeConfirmModal();
+        });
+
+        // === Feedback ao Salvar ===
+        document.addEventListener('submit', function(e) {
+            const form = e.target;
+            const btn = form.querySelector('button[type="submit"]');
+            if (btn && !btn.dataset.noLoading) {
+                btn.disabled = true;
+                btn.dataset.originalHtml = btn.innerHTML;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Salvando...';
+            }
+        });
+
+        // === Busca em Tabelas ===
+        function filterTable(inputId, tableId) {
+            const input = document.getElementById(inputId);
+            const filter = input.value.toLowerCase();
+            const table = document.getElementById(tableId);
+            const rows = table.querySelectorAll('tbody tr');
+            
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                row.style.display = text.includes(filter) ? '' : 'none';
+            });
+        }
+
         function toggleSidebar() {
             const sidebar = document.querySelector('.sidebar');
             const isHidden = sidebar.classList.contains('hidden');
             
             if (isHidden) {
-                // Open sidebar
                 sidebar.classList.remove('hidden');
                 sidebar.classList.add('mobile-overlay');
                 
-                // Add backdrop
                 const backdrop = document.createElement('div');
                 backdrop.id = 'sidebar-backdrop';
                 backdrop.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 90;';
                 backdrop.onclick = toggleSidebar;
                 document.body.appendChild(backdrop);
             } else {
-                // Close sidebar
                 sidebar.classList.add('hidden');
                 sidebar.classList.remove('mobile-overlay');
                 
-                // Remove backdrop
                 const backdrop = document.getElementById('sidebar-backdrop');
                 if (backdrop) backdrop.remove();
             }

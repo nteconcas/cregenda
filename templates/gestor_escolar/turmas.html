@@ -20,6 +20,12 @@
     {% endwith %}
 
     {% if turmas %}
+        <div class="mb-4">
+            <div class="relative w-full sm:w-72">
+                <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+                <input type="text" id="searchTurmas" onkeyup="filterTurmas()" placeholder="Buscar turma..." class="pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 w-full">
+            </div>
+        </div>
         {% set turnos = ['Matutino', 'Vespertino', 'Noturno'] %}
         {% for turno in turnos %}
             {% set turmas_turno = turmas | selectattr('turno', 'equalto', turno) | list %}
@@ -29,9 +35,9 @@
                     {{ turno }}
                 </h3>
                 
-                <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 turmas-grid">
                     {% for t in turmas_turno %}
-                    <div class="card hover:shadow-lg transition-shadow duration-200 flex flex-col justify-between h-full border-l-4 border-l-indigo-500 p-0 overflow-hidden">
+                    <div class="card hover:shadow-lg transition-shadow duration-200 flex flex-col justify-between h-full border-l-4 border-l-indigo-500 p-0 overflow-hidden turma-card" data-nome="{{ t.nome|lower }}">
                         <div class="p-3">
                             <div class="flex items-center justify-between mb-1">
                                 <h4 class="font-bold text-lg text-gray-900 truncate" title="{{ t.nome }}">{{ t.nome }}</h4>
@@ -46,7 +52,7 @@
                                 ✏️
                             </a>
                             <form method="POST" action="{{ url_for('gestor_escolar.excluir_turma', id=t.id) }}" class="flex-1">
-                                <button type="submit" onclick="return confirm('Tem certeza que deseja excluir a turma {{ t.nome }}?')" class="btn btn-outline-danger btn-xs w-full justify-center text-xs py-1" title="Excluir">
+                                <button type="button" onclick="showConfirm(event, 'Excluir Turma', 'Tem certeza que deseja excluir a turma {{ t.nome|e }}? Esta ação não poderá ser desfeita.')" class="btn btn-outline-danger btn-xs w-full justify-center text-xs py-1" title="Excluir">
                                     🗑️
                                 </button>
                             </form>
@@ -72,4 +78,26 @@
             <span class="mr-2">&larr;</span> Voltar ao Dashboard
         </a>
     </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function filterTurmas() {
+    const input = document.getElementById('searchTurmas');
+    const filter = input.value.toLowerCase();
+    const cards = document.querySelectorAll('.turma-card');
+    
+    cards.forEach(card => {
+        const nome = card.dataset.nome;
+        card.style.display = nome.includes(filter) ? '' : 'none';
+    });
+    
+    // Mostrar/esconder cabeçalhos de turno
+    document.querySelectorAll('.turmas-grid').forEach(grid => {
+        const visibleCards = grid.querySelectorAll('.turma-card[style*="display: none"]');
+        const totalCards = grid.querySelectorAll('.turma-card').length;
+        grid.previousElementSibling.style.display = (visibleCards.length === totalCards) ? 'none' : '';
+    });
+}
+</script>
 {% endblock %}

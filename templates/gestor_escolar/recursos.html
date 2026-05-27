@@ -84,20 +84,26 @@
 </style>
 
 <div class="container mx-auto">
-    <div class="flex justify-between items-center mb-8">
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
         <h2 class="text-2xl font-bold text-gray-800 flex items-center gap-3">
             <span class="bg-indigo-100 text-indigo-600 p-2 rounded-lg">
                 <i class="fas fa-cubes"></i>
             </span>
             Recursos Cadastrados
         </h2>
-        <a href="{{ url_for('gestor_escolar.cadastrar_recurso') }}" class="btn btn-primary shadow-sm flex items-center gap-2">
-            <i class="fas fa-plus"></i> Novo Recurso
-        </a>
+        <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
+            <div class="relative flex-1 sm:flex-none">
+                <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+                <input type="text" id="searchRecursos" onkeyup="filterTable('searchRecursos', 'recursosGrid')" placeholder="Buscar recurso..." class="pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 w-full sm:w-64">
+            </div>
+            <a href="{{ url_for('gestor_escolar.cadastrar_recurso') }}" class="btn btn-primary shadow-sm flex items-center gap-2 justify-center">
+                <i class="fas fa-plus"></i> Novo Recurso
+            </a>
+        </div>
     </div>
 
     {% if recursos %}
-    <div class="recurso-grid">
+    <div class="recurso-grid" id="recursosGrid">
         {% for r in recursos %}
             {% set nome_lower = r.nome.lower() %}
             
@@ -147,7 +153,7 @@
                         <i class="fas fa-edit"></i> Editar
                     </a>
                     <form method="POST" action="{{ url_for('gestor_escolar.excluir_recurso', id=r.id) }}" class="flex-1">
-                        <button type="submit" onclick="return confirm('Tem certeza que deseja excluir o recurso {{ r.nome }}?')" class="w-full btn btn-light btn-sm flex items-center justify-center gap-2 hover:bg-red-50 hover:text-red-600 text-gray-700">
+                        <button type="button" onclick="showConfirm(event, 'Excluir Recurso', 'Tem certeza que deseja excluir o recurso {{ r.nome|e }}? Esta ação não poderá ser desfeita.')" class="w-full btn btn-light btn-sm flex items-center justify-center gap-2 hover:bg-red-50 hover:text-red-600 text-gray-700">
                             <i class="fas fa-trash-alt"></i> Excluir
                         </button>
                     </form>

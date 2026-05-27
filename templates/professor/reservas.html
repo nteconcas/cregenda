@@ -68,8 +68,8 @@
                     </td>
                     <td class="px-4 py-3">
                         {% if reserva.status == 'confirmada' %}
-                        <form action="{{ url_for('professor.cancelar_reserva', id=reserva.id) }}" method="POST" onsubmit="return confirm('Tem certeza que deseja cancelar esta reserva?');" style="display:inline;">
-                            <button type="submit" class="text-red-600 hover:text-red-900 font-medium text-xs border border-red-200 hover:bg-red-50 rounded px-2 py-1 transition-colors">Cancelar</button>
+                        <form action="{{ url_for('professor.cancelar_reserva', id=reserva.id) }}" method="POST" style="display:inline;">
+                            <button type="button" onclick="showConfirm(event, 'Cancelar Reserva', 'Tem certeza que deseja cancelar esta reserva? Esta ação não pode ser desfeita.')" class="text-red-600 hover:text-red-900 font-medium text-xs border border-red-200 hover:bg-red-50 rounded px-2 py-1 transition-colors">Cancelar</button>
                         </form>
                         {% endif %}
                     </td>

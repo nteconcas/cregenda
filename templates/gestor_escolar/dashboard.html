@@ -137,8 +137,8 @@
 
              <!-- Cancelar (Secondary Action) -->
              <div id="areaCancelar" class="mt-6 pt-4 border-t text-center">
-                <form id="formCancelar" action="" method="POST" onsubmit="return confirm('Tem certeza que deseja CANCELAR esta reserva? O horário ficará livre.')">
-                    <button type="submit" class="text-sm text-red-600 hover:text-red-800 hover:underline font-medium">
+                <form id="formCancelar" action="" method="POST">
+                    <button type="button" onclick="showConfirm(event, 'Cancelar Reserva', 'Tem certeza que deseja CANCELAR esta reserva? O horário ficará livre para novos agendamentos.')" class="text-sm text-red-600 hover:text-red-800 hover:underline font-medium">
                         Cancelar Reserva (Remover)
                     </button>
                 </form>
