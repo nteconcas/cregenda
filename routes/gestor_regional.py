@@ -328,6 +328,12 @@ def relatorio_escola(id):
         Reserva.disciplina_id != None,
         Reserva.status.notin_(['cancelada', 'nao_realizada'])
     ).group_by(Disciplina.id).order_by(func.count(Reserva.id).desc()).limit(5).all()
+    
+    # Calcular % de cada disciplina em relação ao total de reservas válidas
+    disciplinas_stats_com_pct = []
+    for nome, total in disciplinas_stats:
+        pct = round((total / total_reservas * 100), 1) if total_reservas > 0 else 0
+        disciplinas_stats_com_pct.append((nome, total, pct))
 
     return render_template('gestor_regional/relatorio_escola.html',
                            escola=escola,
@@ -340,7 +346,7 @@ def relatorio_escola(id):
                            metricas_recursos=metricas_recursos,
                            capacidade_por_recurso=capacidade_por_recurso,
                            professores_top=professores_top,
-                           disciplinas_stats=disciplinas_stats,
+                           disciplinas_stats=disciplinas_stats_com_pct,
                            usuario=current_user)
 
 

@@ -197,14 +197,16 @@
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">#</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Disciplina</th>
                             <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Reservas</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">%</th>
                         </tr>
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-200">
-                        {% for nome, total in disciplinas_stats %}
+                        {% for nome, total, pct in disciplinas_stats %}
                         <tr>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ loop.index }}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ nome }}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-right font-bold text-green-600">{{ total }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-600">{{ pct }}%</td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -371,10 +373,10 @@ async function exportPDF() {
     doc.text('Disciplinas com Mais Reservas', margin, yPos);
     yPos += 6;
 
-    const discHeaders = ['Disciplina', 'Reservas'];
+    const discHeaders = ['Disciplina', 'Reservas', '%'];
     const discRows = [
-        {% for nome, total in disciplinas_stats %}
-        ['{{ nome }}', '{{ total }}'],
+        {% for nome, total, pct in disciplinas_stats %}
+        ['{{ nome }}', '{{ total }}', '{{ pct }}%'],
         {% endfor %}
     ];
     addTableToPDF(discHeaders, discRows, yPos);
