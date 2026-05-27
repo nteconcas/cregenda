@@ -24,4 +24,5 @@ EXPOSE 80
 
 # Command to run the application using Gunicorn
 # Primeiro roda o script de criação de admin e atualização de schema, depois inicia o servidor
-CMD ["sh", "-c", "python create_admin.py && python update_schema.py && gunicorn -w 4 -b 0.0.0.0:80 wsgi:app"]
+# Usa a porta da variável de ambiente PORT (definida pela plataforma de deploy) ou 80 como fallback
+CMD ["sh", "-c", "python create_admin.py && python update_schema.py && gunicorn -w 4 -b 0.0.0.0:${PORT:-80} wsgi:app"]
