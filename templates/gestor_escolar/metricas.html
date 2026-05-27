@@ -8,57 +8,58 @@
 
 <div class="flex flex-col gap-6 pb-10" id="metrics-container">
     <!-- Header & Filters -->
-    <div class="bg-white p-6 rounded-lg shadow-md no-print">
-        <div class="flex flex-col md:flex-row justify-between items-end gap-4">
-            <div>
-                <h2 class="text-2xl font-bold text-gray-800">📊 Métricas e Relatórios</h2>
-                <p class="text-gray-500 text-sm">Análise de desempenho e ocupação</p>
+    <div class="bg-white p-4 sm:p-6 rounded-lg shadow-md no-print">
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-3 sm:gap-4">
+            <div class="w-full md:w-auto">
+                <h2 class="text-xl sm:text-2xl font-bold text-gray-800">📊 Métricas e Relatórios</h2>
+                <p class="text-gray-500 text-xs sm:text-sm">Análise de desempenho e ocupação</p>
             </div>
             
-            <div class="flex gap-3 items-end">
-                <form class="flex gap-3 items-end bg-gray-50 p-3 rounded-lg border">
-                    <div>
-                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Início</label>
-                        <input type="date" name="data_inicio" value="{{ data_inicio }}" class="p-2 border rounded text-sm focus:ring-2 focus:ring-primary focus:border-transparent outline-none">
+            <div class="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full md:w-auto">
+                <form class="flex flex-wrap sm:flex-nowrap gap-2 items-end bg-gray-50 p-2 sm:p-3 rounded-lg border w-full sm:w-auto">
+                    <div class="flex-1 sm:flex-none">
+                        <label class="block text-[10px] sm:text-xs font-bold text-gray-500 uppercase mb-1">Início</label>
+                        <input type="date" name="data_inicio" value="{{ data_inicio }}" class="w-full sm:w-auto p-1.5 sm:p-2 border rounded text-xs sm:text-sm focus:ring-2 focus:ring-primary focus:border-transparent outline-none">
                     </div>
-                    <div>
-                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Fim</label>
-                        <input type="date" name="data_fim" value="{{ data_fim }}" class="p-2 border rounded text-sm focus:ring-2 focus:ring-primary focus:border-transparent outline-none">
+                    <div class="flex-1 sm:flex-none">
+                        <label class="block text-[10px] sm:text-xs font-bold text-gray-500 uppercase mb-1">Fim</label>
+                        <input type="date" name="data_fim" value="{{ data_fim }}" class="w-full sm:w-auto p-1.5 sm:p-2 border rounded text-xs sm:text-sm focus:ring-2 focus:ring-primary focus:border-transparent outline-none">
                     </div>
-                    <button type="submit" class="bg-primary text-white px-4 py-2 rounded text-sm font-medium hover:bg-primary-hover transition-colors">
+                    <button type="submit" class="w-full sm:w-auto bg-primary text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded text-xs sm:text-sm font-medium hover:bg-primary-hover transition-colors mt-1 sm:mt-0">
                         Filtrar
                     </button>
                 </form>
                 
-                <button onclick="exportPDF()" class="bg-gray-800 text-white px-4 py-2 rounded text-sm font-medium hover:bg-gray-900 transition-colors flex items-center gap-2 h-[66px] self-start">
-                    <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                    Exportar PDF
+                <button onclick="exportPDF()" class="w-full sm:w-auto bg-gray-800 text-white px-3 sm:px-4 py-2 rounded text-xs sm:text-sm font-medium hover:bg-gray-900 transition-colors flex items-center justify-center gap-2">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                    <span class="hidden sm:inline">Exportar PDF</span>
+                    <span class="sm:hidden">PDF</span>
                 </button>
             </div>
         </div>
     </div>
 
     <!-- Resumo Cards -->
-    <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
-        <div class="bg-white p-4 rounded-lg shadow border-l-4 border-blue-500">
-            <div class="text-xs font-bold text-gray-500 uppercase">Total Realizadas</div>
-            <div class="text-2xl font-bold text-gray-800">{{ realizadas }}</div>
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3 sm:gap-4">
+        <div class="bg-white p-3 sm:p-4 rounded-lg shadow border-l-4 border-blue-500">
+            <div class="text-[10px] sm:text-xs font-bold text-gray-500 uppercase truncate">Realizadas</div>
+            <div class="text-xl sm:text-2xl font-bold text-gray-800">{{ realizadas }}</div>
         </div>
-        <div class="bg-white p-4 rounded-lg shadow border-l-4 border-yellow-500">
-            <div class="text-xs font-bold text-gray-500 uppercase">Não Concretizadas</div>
-            <div class="text-2xl font-bold text-gray-800">{{ nao_realizadas }}</div>
+        <div class="bg-white p-3 sm:p-4 rounded-lg shadow border-l-4 border-yellow-500">
+            <div class="text-[10px] sm:text-xs font-bold text-gray-500 uppercase truncate">Não Concretizadas</div>
+            <div class="text-xl sm:text-2xl font-bold text-gray-800">{{ nao_realizadas }}</div>
         </div>
-        <div class="bg-white p-4 rounded-lg shadow border-l-4 border-red-500">
-            <div class="text-xs font-bold text-gray-500 uppercase">Canceladas</div>
-            <div class="text-2xl font-bold text-gray-800">{{ canceladas }}</div>
+        <div class="bg-white p-3 sm:p-4 rounded-lg shadow border-l-4 border-red-500">
+            <div class="text-[10px] sm:text-xs font-bold text-gray-500 uppercase truncate">Canceladas</div>
+            <div class="text-xl sm:text-2xl font-bold text-gray-800">{{ canceladas }}</div>
         </div>
-        <div class="bg-white p-4 rounded-lg shadow border-l-4 border-gray-300">
-            <div class="text-xs font-bold text-gray-500 uppercase">Capacidade Total (Período)</div>
-            <div class="text-2xl font-bold text-gray-800">{{ total_possiveis }}</div>
+        <div class="bg-white p-3 sm:p-4 rounded-lg shadow border-l-4 border-gray-300">
+            <div class="text-[10px] sm:text-xs font-bold text-gray-500 uppercase truncate">Capacidade Total</div>
+            <div class="text-xl sm:text-2xl font-bold text-gray-800">{{ total_possiveis }}</div>
         </div>
-        <div class="bg-white p-4 rounded-lg shadow border-l-4 border-indigo-500">
-            <div class="text-xs font-bold text-gray-500 uppercase">Capacidade por Recurso</div>
-            <div class="text-2xl font-bold text-gray-800">{{ capacidade_por_recurso }}</div>
+        <div class="bg-white p-3 sm:p-4 rounded-lg shadow border-l-4 border-indigo-500">
+            <div class="text-[10px] sm:text-xs font-bold text-gray-500 uppercase truncate">Capac./Recurso</div>
+            <div class="text-xl sm:text-2xl font-bold text-gray-800">{{ capacidade_por_recurso }}</div>
         </div>
     </div>
 
