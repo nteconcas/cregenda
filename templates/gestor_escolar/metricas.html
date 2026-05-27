@@ -119,14 +119,6 @@
     </div>
 
 
-    <!-- Charts Row 2 -->
-    <div class="bg-white p-6 rounded-lg shadow flex flex-col items-center">
-         <h3 class="font-bold text-lg mb-6 text-gray-800 w-full border-b pb-2">Eficiência Global (Ocupação vs Capacidade)</h3>
-         <div class="w-full md:w-2/3 h-72">
-            <canvas id="chartEficiencia"></canvas>
-         </div>
-    </div>
-
     <!-- Tables Row -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 page-break-inside-avoid">
         <!-- Top Professors -->
@@ -209,39 +201,6 @@
             maintainAspectRatio: false,
             plugins: {
                 legend: { position: 'right' }
-            }
-        }
-    });
-
-    // --- Chart 3: Eficiência (Bar/Pie Mixed) ---
-    // User asked for "Reservas Possíveis X reservas realzidas X reservas não concretizadasX reservas canceladas"
-    // A bar chart might be better to compare Totals, but user asked for "gráfico poizza" in one context, 
-    // but clearly comparing Total Possible vs Parts is hard in a single Pie unless "Available" is the slice.
-    
-    // Let's calculate "Available/Unused" slots
-    const totalOccupied = stats.realizadas + stats.nao_realizadas; // Canceladas usually frees up slot, but for historical stats maybe we count them? 
-    // Usually Cancelled frees the slot. So 'Available' = Possible - (Realized + NotRealized).
-    // Note: 'Cancelada' stays in DB but frees slot logic in some systems. Here we just show the numbers.
-    
-    const unused = Math.max(0, stats.possiveis - (stats.realizadas + stats.nao_realizadas));
-
-    new Chart(document.getElementById('chartEficiencia'), {
-        type: 'pie',
-        data: {
-            labels: ['Realizadas', 'Não Concretizadas', 'Disponíveis/Livres'],
-            datasets: [{
-                data: [stats.realizadas, stats.nao_realizadas, unused],
-                backgroundColor: ['#10B981', '#F59E0B', '#E5E7EB']
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                title: {
-                    display: true,
-                    text: `Capacidade Total: ${stats.possiveis} Aulas`
-                }
             }
         }
     });
@@ -351,17 +310,6 @@
             `##Total de Reservas: ${stats.realizadas + stats.nao_realizadas + stats.canceladas}`
         ];
         addMetricPage('Status das Reservas', 'chartStatus', statusDataLines);
-
-        // 3. Página: Eficiência Global
-        doc.addPage();
-        const eficienciaDataLines = [
-            `Capacidade Total: ${stats.possiveis}`,
-            `Total Ocupado: ${stats.realizadas + stats.nao_realizadas}`,
-            `Disponibilidade: ${Math.max(0, stats.possiveis - (stats.realizadas + stats.nao_realizadas))}`,
-            '',
-            `##Taxa de Ocupação: ${Math.round(((stats.realizadas + stats.nao_realizadas) / stats.possiveis) * 100) || 0}%`
-        ];
-        addMetricPage('Eficiência Global', 'chartEficiencia', eficienciaDataLines);
 
         doc.save('relatorio_metricas.pdf');
     }

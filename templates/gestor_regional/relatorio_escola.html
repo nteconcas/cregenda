@@ -71,22 +71,6 @@
             </div>
         </div>
 
-        <!-- Taxa de Ocupação (Simulada/Simples) -->
-        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center gap-4">
-            <div class="p-4 bg-blue-50 text-blue-600 rounded-lg flex-shrink-0">
-                <i class="fas fa-percent text-2xl"></i>
-            </div>
-            <div class="flex-1 min-w-0">
-                <p class="text-sm font-medium text-gray-500 uppercase truncate" title="Status Principal">Status Principal</p>
-                <h3 class="text-lg font-bold text-gray-900 truncate" title="{% if reservas_por_status %}{{ reservas_por_status[0][0]|capitalize }}{% else %}N/A{% endif %}">
-                    {% if reservas_por_status %}
-                        {{ reservas_por_status[0][0]|capitalize }}
-                    {% else %}
-                        N/A
-                    {% endif %}
-                </h3>
-            </div>
-        </div>
     </div>
 
     <!-- Detailed Lists -->
