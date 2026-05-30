@@ -82,8 +82,13 @@
                 </thead>
                 <tbody>
                     {% for r in metricas_recursos %}
-                    <tr class="border-b last:border-0 hover:bg-gray-50">
-                        <td class="p-3 font-medium text-gray-800">{{ r.nome }}</td>
+                    <tr class="border-b last:border-0 hover:bg-gray-50 cursor-pointer" onclick="toggleDetalhe('detalhe_{{ loop.index }}')">
+                        <td class="p-3 font-medium text-gray-800 hover:text-primary transition-colors">
+                            <span class="flex items-center gap-2">
+                                <i class="fas fa-chevron-right text-xs text-gray-400 transition-transform" id="icone_{{ loop.index }}"></i>
+                                {{ r.nome }}
+                            </span>
+                        </td>
                         <td class="text-center p-3 font-mono">{{ r.total_solicitado }}</td>
                         <td class="text-center p-3 font-mono text-green-600 font-bold">{{ r.concretizadas }}</td>
                         <td class="text-center p-3">
@@ -111,6 +116,79 @@
             </table>
         </div>
     </div>
+
+    <!-- Detalhamento por Recurso: Professores e Turmas (oculto, toggle ao clicar) -->
+    {% for r in metricas_recursos %}
+    {% if r.professores or r.turmas %}
+    <div id="detalhe_{{ loop.index }}" class="bg-white p-6 rounded-lg shadow hidden">
+        <h3 class="font-bold text-lg mb-4 text-gray-800 flex items-center gap-2">
+            🔍 Detalhamento: {{ r.nome }}
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Professores por Recurso -->
+            <div>
+                <h4 class="font-semibold text-sm text-gray-600 mb-3 flex items-center gap-2">
+                    <i class="fas fa-chalkboard-teacher text-orange-500"></i> Professores
+                </h4>
+                {% if r.professores %}
+                <div class="overflow-hidden rounded-lg border">
+                    <table class="w-full text-sm">
+                        <thead>
+                            <tr class="bg-gray-50 border-b">
+                                <th class="text-left p-2 font-semibold text-gray-600">Professor</th>
+                                <th class="text-right p-2 font-semibold text-gray-600">Reservas</th>
+                                <th class="text-right p-2 font-semibold text-gray-600">%</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for prof in r.professores %}
+                            <tr class="border-b last:border-0 hover:bg-gray-50">
+                                <td class="p-2 truncate max-w-[150px]" title="{{ prof.nome }}">{{ prof.nome }}</td>
+                                <td class="text-right p-2 font-mono font-bold text-primary">{{ prof.total }}</td>
+                                <td class="text-right p-2 font-mono text-gray-600">{{ prof.pct }}%</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-gray-400 italic text-sm">Sem dados no período</p>
+                {% endif %}
+            </div>
+            <!-- Turmas por Recurso -->
+            <div>
+                <h4 class="font-semibold text-sm text-gray-600 mb-3 flex items-center gap-2">
+                    <i class="fas fa-users text-indigo-500"></i> Turmas
+                </h4>
+                {% if r.turmas %}
+                <div class="overflow-hidden rounded-lg border">
+                    <table class="w-full text-sm">
+                        <thead>
+                            <tr class="bg-gray-50 border-b">
+                                <th class="text-left p-2 font-semibold text-gray-600">Turma</th>
+                                <th class="text-right p-2 font-semibold text-gray-600">Reservas</th>
+                                <th class="text-right p-2 font-semibold text-gray-600">%</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for turma in r.turmas %}
+                            <tr class="border-b last:border-0 hover:bg-gray-50">
+                                <td class="p-2 truncate max-w-[150px]" title="{{ turma.nome }}">{{ turma.nome }}</td>
+                                <td class="text-right p-2 font-mono font-bold text-indigo-600">{{ turma.total }}</td>
+                                <td class="text-right p-2 font-mono text-gray-600">{{ turma.pct }}%</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-gray-400 italic text-sm">Sem dados no período</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    {% endfor %}
 
     <!-- Charts Row 1 -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -141,11 +219,45 @@
                         </tr>
                     </thead>
                     <tbody>
-                        {% for nome, qtd, pct in top_professores %}
-                        <tr class="border-b last:border-0 hover:bg-gray-50">
-                            <td class="p-3 truncate max-w-[200px]" title="{{ nome }}">{{ nome }}</td>
-                            <td class="text-right p-3 font-mono font-bold text-primary">{{ qtd }}</td>
-                            <td class="text-right p-3 font-mono text-gray-600">{{ pct }}%</td>
+                        {% for prof in top_professores %}
+                        <tr class="border-b last:border-0 hover:bg-gray-50 cursor-pointer" onclick="toggleProfDetalhe('prof_detalhe_{{ loop.index }}')">
+                            <td class="p-3 truncate max-w-[200px] hover:text-indigo-600" title="{{ prof.nome }}">
+                                <span class="flex items-center gap-2">
+                                    <i class="fas fa-chevron-right text-xs text-gray-400 transition-transform" id="prof_icone_{{ loop.index }}"></i>
+                                    {{ prof.nome }}
+                                </span>
+                            </td>
+                            <td class="text-right p-3 font-mono font-bold text-primary">{{ prof.total }}</td>
+                            <td class="text-right p-3 font-mono text-gray-600">{{ prof.pct }}%</td>
+                        </tr>
+                        <tr id="prof_detalhe_{{ loop.index }}" class="hidden">
+                            <td colspan="3" class="p-0">
+                                <div class="bg-gray-50 p-3 border-t border-b">
+                                    <h4 class="text-xs font-semibold text-gray-500 uppercase mb-2">Reservas por Recurso</h4>
+                                    {% if prof.recursos %}
+                                    <table class="w-full text-xs">
+                                        <thead>
+                                            <tr class="text-gray-400 border-b">
+                                                <th class="text-left py-1">Recurso</th>
+                                                <th class="text-right py-1">Reservas</th>
+                                                <th class="text-right py-1">%</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for rec in prof.recursos %}
+                                            <tr class="border-b border-gray-200 last:border-0">
+                                                <td class="py-1 text-gray-700">{{ rec.nome }}</td>
+                                                <td class="py-1 text-right font-mono font-bold text-primary">{{ rec.total }}</td>
+                                                <td class="py-1 text-right font-mono text-gray-500">{{ rec.pct }}%</td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                    {% else %}
+                                    <p class="text-gray-400 italic text-xs">Sem dados no período</p>
+                                    {% endif %}
+                                </div>
+                            </td>
                         </tr>
                         {% else %}
                         <tr><td colspan="3" class="p-4 text-center text-gray-500 italic">Sem dados no período</td></tr>
@@ -170,11 +282,45 @@
                         </tr>
                     </thead>
                     <tbody>
-                        {% for nome, qtd, pct in top_turmas %}
-                        <tr class="border-b last:border-0 hover:bg-gray-50">
-                            <td class="p-3 truncate max-w-[200px]" title="{{ nome }}">{{ nome }}</td>
-                            <td class="text-right p-3 font-mono font-bold text-indigo-600">{{ qtd }}</td>
-                            <td class="text-right p-3 font-mono text-gray-600">{{ pct }}%</td>
+                        {% for turma in top_turmas %}
+                        <tr class="border-b last:border-0 hover:bg-gray-50 cursor-pointer" onclick="toggleTurmaDetalhe('turma_detalhe_{{ loop.index }}')">
+                            <td class="p-3 truncate max-w-[200px] hover:text-indigo-600" title="{{ turma.nome }}">
+                                <span class="flex items-center gap-2">
+                                    <i class="fas fa-chevron-right text-xs text-gray-400 transition-transform" id="turma_icone_{{ loop.index }}"></i>
+                                    {{ turma.nome }}
+                                </span>
+                            </td>
+                            <td class="text-right p-3 font-mono font-bold text-indigo-600">{{ turma.total }}</td>
+                            <td class="text-right p-3 font-mono text-gray-600">{{ turma.pct }}%</td>
+                        </tr>
+                        <tr id="turma_detalhe_{{ loop.index }}" class="hidden">
+                            <td colspan="3" class="p-0">
+                                <div class="bg-gray-50 p-3 border-t border-b">
+                                    <h4 class="text-xs font-semibold text-gray-500 uppercase mb-2">Reservas por Recurso</h4>
+                                    {% if turma.recursos %}
+                                    <table class="w-full text-xs">
+                                        <thead>
+                                            <tr class="text-gray-400 border-b">
+                                                <th class="text-left py-1">Recurso</th>
+                                                <th class="text-right py-1">Reservas</th>
+                                                <th class="text-right py-1">%</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for rec in turma.recursos %}
+                                            <tr class="border-b border-gray-200 last:border-0">
+                                                <td class="py-1 text-gray-700">{{ rec.nome }}</td>
+                                                <td class="py-1 text-right font-mono font-bold text-indigo-600">{{ rec.total }}</td>
+                                                <td class="py-1 text-right font-mono text-gray-500">{{ rec.pct }}%</td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                    {% else %}
+                                    <p class="text-gray-400 italic text-xs">Sem dados no período</p>
+                                    {% endif %}
+                                </div>
+                            </td>
                         </tr>
                         {% else %}
                         <tr><td colspan="3" class="p-4 text-center text-gray-500 italic">Sem dados no período</td></tr>
@@ -194,6 +340,70 @@
         canceladas: {{ canceladas }},
         possiveis: {{ total_possiveis }}
     };
+
+    // --- Toggle Detalhamento do Recurso ---
+    function toggleDetalhe(id) {
+        const el = document.getElementById(id);
+        if (!el) return;
+        const isHidden = el.classList.contains('hidden');
+        // Fecha todos os outros detalhes abertos
+        document.querySelectorAll('[id^="detalhe_"]').forEach(d => {
+            if (d.id !== id) {
+                d.classList.add('hidden');
+                const icone = document.getElementById('icone_' + d.id.replace('detalhe_', ''));
+                if (icone) icone.style.transform = 'rotate(0deg)';
+            }
+        });
+        // Reseta todos os ícones
+        document.querySelectorAll('[id^="icone_"]').forEach(i => i.style.transform = 'rotate(0deg)');
+        // Toggle no clicado
+        if (isHidden) {
+            el.classList.remove('hidden');
+            const icone = document.getElementById('icone_' + id.replace('detalhe_', ''));
+            if (icone) icone.style.transform = 'rotate(90deg)';
+        }
+    }
+
+    // --- Toggle Detalhamento do Professor ---
+    function toggleProfDetalhe(id) {
+        const el = document.getElementById(id);
+        if (!el) return;
+        const isHidden = el.classList.contains('hidden');
+        // Fecha todos os outros detalhes de professor
+        document.querySelectorAll('[id^="prof_detalhe_"]').forEach(d => {
+            if (d.id !== id) {
+                d.classList.add('hidden');
+                const icone = document.getElementById('prof_icone_' + d.id.replace('prof_detalhe_', ''));
+                if (icone) icone.style.transform = 'rotate(0deg)';
+            }
+        });
+        document.querySelectorAll('[id^="prof_icone_"]').forEach(i => i.style.transform = 'rotate(0deg)');
+        if (isHidden) {
+            el.classList.remove('hidden');
+            const icone = document.getElementById('prof_icone_' + id.replace('prof_detalhe_', ''));
+            if (icone) icone.style.transform = 'rotate(90deg)';
+        }
+    }
+
+    // --- Toggle Detalhamento da Turma ---
+    function toggleTurmaDetalhe(id) {
+        const el = document.getElementById(id);
+        if (!el) return;
+        const isHidden = el.classList.contains('hidden');
+        document.querySelectorAll('[id^="turma_detalhe_"]').forEach(d => {
+            if (d.id !== id) {
+                d.classList.add('hidden');
+                const icone = document.getElementById('turma_icone_' + d.id.replace('turma_detalhe_', ''));
+                if (icone) icone.style.transform = 'rotate(0deg)';
+            }
+        });
+        document.querySelectorAll('[id^="turma_icone_"]').forEach(i => i.style.transform = 'rotate(0deg)');
+        if (isHidden) {
+            el.classList.remove('hidden');
+            const icone = document.getElementById('turma_icone_' + id.replace('turma_detalhe_', ''));
+            if (icone) icone.style.transform = 'rotate(90deg)';
+        }
+    }
 
     // --- Chart 1: Status Breakdown (Doughnut) ---
     new Chart(document.getElementById('chartStatus'), {
@@ -347,12 +557,12 @@
         doc.text('Top 10 Professores', margin, yPos);
         yPos += 6;
 
-        const profHeaders = ['Professor', 'Reservas', '%'];
-        const profRows = [
-            {% for nome, qtd, pct in top_professores %}
-            ['{{ nome }}', '{{ qtd }}', '{{ pct }}%'],
-            {% endfor %}
-        ];
+    const profHeaders = ['Professor', 'Reservas', '%'];
+    const profRows = [
+        {% for prof in top_professores %}
+        ['{{ prof.nome }}', '{{ prof.total }}', '{{ prof.pct }}%'],
+        {% endfor %}
+    ];
         yPos = addTableToPDF(profHeaders, profRows, yPos);
         yPos += 8;
 
@@ -369,11 +579,66 @@
 
         const turmaHeaders = ['Turma', 'Reservas', '%'];
         const turmaRows = [
-            {% for nome, qtd, pct in top_turmas %}
-            ['{{ nome }}', '{{ qtd }}', '{{ pct }}%'],
+            {% for turma in top_turmas %}
+            ['{{ turma.nome }}', '{{ turma.total }}', '{{ turma.pct }}%'],
             {% endfor %}
         ];
-        addTableToPDF(turmaHeaders, turmaRows, yPos);
+        yPos = addTableToPDF(turmaHeaders, turmaRows, yPos);
+        yPos += 8;
+
+        // 4. Detalhamento por Recurso (Professores e Turmas)
+        {% for r in metricas_recursos %}
+        {% if r.professores or r.turmas %}
+        if (yPos + 30 > pageHeight - margin) {
+            doc.addPage();
+            yPos = margin + 5;
+        }
+        doc.setFontSize(12);
+        doc.setTextColor(40, 40, 40);
+        doc.setFont(undefined, 'bold');
+        doc.text('Detalhamento: {{ r.nome }}', margin, yPos);
+        yPos += 6;
+
+        // Professores do recurso
+        {% if r.professores %}
+        doc.setFontSize(10);
+        doc.setTextColor(100, 100, 100);
+        doc.setFont(undefined, 'bold');
+        doc.text('Professores', margin, yPos);
+        yPos += 5;
+        const profRecHeaders = ['Professor', 'Reservas', '%'];
+        const profRecRows = [
+            {% for prof in r.professores %}
+            ['{{ prof.nome }}', '{{ prof.total }}', '{{ prof.pct }}%'],
+            {% endfor %}
+        ];
+        yPos = addTableToPDF(profRecHeaders, profRecRows, yPos);
+        yPos += 5;
+        {% endif %}
+
+        // Turmas do recurso
+        {% if r.turmas %}
+        if (yPos + 20 > pageHeight - margin) {
+            doc.addPage();
+            yPos = margin + 5;
+        }
+        doc.setFontSize(10);
+        doc.setTextColor(100, 100, 100);
+        doc.setFont(undefined, 'bold');
+        doc.text('Turmas', margin, yPos);
+        yPos += 5;
+        const turmaRecHeaders = ['Turma', 'Reservas', '%'];
+        const turmaRecRows = [
+            {% for turma in r.turmas %}
+            ['{{ turma.nome }}', '{{ turma.total }}', '{{ turma.pct }}%'],
+            {% endfor %}
+        ];
+        yPos = addTableToPDF(turmaRecHeaders, turmaRecRows, yPos);
+        yPos += 8;
+        {% endif %}
+
+        {% endif %}
+        {% endfor %}
 
         doc.save('relatorio_metricas.pdf');
     }

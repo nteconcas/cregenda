@@ -981,8 +981,39 @@ def metricas():
         if possibilidade_agendamento < 0:
             possibilidade_agendamento = 0
         
-        # % de agendamento (concretizadas / possibilidade)
-        pct_agendamento = round((concretizadas / possibilidade_agendamento * 100), 1) if possibilidade_agendamento > 0 else 0
+        # % de agendamento (concretizadas / total_solicitado * 100)
+        pct_agendamento = round((concretizadas / total_solicitado * 100), 1) if total_solicitado > 0 else 0
+        
+        # Top Professores por Recurso
+        top_professores_recurso = Reserva.query.join(Usuario).filter(
+            Reserva.recurso_id == recurso.id,
+            Reserva.data >= data_inicio,
+            Reserva.data <= data_fim,
+            Reserva.status.notin_(['cancelada', 'nao_realizada'])
+        ).with_entities(
+            Usuario.nome, func.count(Reserva.id)
+        ).group_by(Usuario.nome).order_by(desc(func.count(Reserva.id))).limit(5).all()
+        
+        professores_com_pct = []
+        for nome, total in top_professores_recurso:
+            pct = round((total / total_solicitado * 100), 1) if total_solicitado > 0 else 0
+            professores_com_pct.append({'nome': nome, 'total': total, 'pct': pct})
+        
+        # Top Turmas por Recurso
+        top_turmas_recurso = Reserva.query.join(Turma).filter(
+            Reserva.recurso_id == recurso.id,
+            Reserva.data >= data_inicio,
+            Reserva.data <= data_fim,
+            Reserva.status.notin_(['cancelada', 'nao_realizada']),
+            Reserva.turma_id != None
+        ).with_entities(
+            Turma.nome, func.count(Reserva.id)
+        ).group_by(Turma.nome).order_by(desc(func.count(Reserva.id))).limit(5).all()
+        
+        turmas_com_pct = []
+        for nome, total in top_turmas_recurso:
+            pct = round((total / total_solicitado * 100), 1) if total_solicitado > 0 else 0
+            turmas_com_pct.append({'nome': nome, 'total': total, 'pct': pct})
         
         metricas_recursos.append({
             'nome': recurso.nome,
@@ -990,7 +1021,9 @@ def metricas():
             'concretizadas': concretizadas,
             'aproveitamento': aproveitamento,
             'possibilidade_agendamento': possibilidade_agendamento,
-            'pct_agendamento': pct_agendamento
+            'pct_agendamento': pct_agendamento,
+            'professores': professores_com_pct,
+            'turmas': turmas_com_pct
         })
     
     # 3. Status das Reservas (geral)
@@ -1017,7 +1050,7 @@ def metricas():
     # Capacidade por recurso (total_possiveis dividido pela quantidade de recursos)
     capacidade_por_recurso = round(total_possiveis / num_recursos, 1) if num_recursos > 0 else 0
     
-    # 5. Top 10 Professores
+    # 5. Top 10 Professores (com detalhamento por recurso)
     top_professores = query_base.join(Usuario).with_entities(
         Usuario.nome, func.count(Reserva.id)
     ).group_by(Usuario.nome).order_by(desc(func.count(Reserva.id))).limit(10).all()
@@ -1027,9 +1060,30 @@ def metricas():
     top_professores_com_pct = []
     for nome, total in top_professores:
         pct = round((total / total_reservas_validas * 100), 1) if total_reservas_validas > 0 else 0
-        top_professores_com_pct.append((nome, total, pct))
+        # Reservas por recurso para este professor
+        prof_recursos = Reserva.query.join(Recurso).join(Usuario).filter(
+            Usuario.nome == nome,
+            Recurso.escola_id == current_user.escola_id,
+            Reserva.data >= data_inicio,
+            Reserva.data <= data_fim,
+            Reserva.status.notin_(['cancelada', 'nao_realizada'])
+        ).with_entities(
+            Recurso.nome, func.count(Reserva.id)
+        ).group_by(Recurso.nome).order_by(desc(func.count(Reserva.id))).all()
+        
+        prof_recursos_pct = []
+        for rec_nome, rec_total in prof_recursos:
+            rec_pct = round((rec_total / total * 100), 1) if total > 0 else 0
+            prof_recursos_pct.append({'nome': rec_nome, 'total': rec_total, 'pct': rec_pct})
+        
+        top_professores_com_pct.append({
+            'nome': nome,
+            'total': total,
+            'pct': pct,
+            'recursos': prof_recursos_pct
+        })
     
-    # 6. Top 10 Turmas
+    # 6. Top 10 Turmas (com detalhamento por recurso)
     top_turmas = query_base.join(Turma).with_entities(
         Turma.nome, func.count(Reserva.id)
     ).group_by(Turma.nome).order_by(desc(func.count(Reserva.id))).limit(10).all()
@@ -1038,7 +1092,28 @@ def metricas():
     top_turmas_com_pct = []
     for nome, total in top_turmas:
         pct = round((total / total_reservas_validas * 100), 1) if total_reservas_validas > 0 else 0
-        top_turmas_com_pct.append((nome, total, pct))
+        # Reservas por recurso para esta turma
+        turma_recursos = Reserva.query.join(Recurso).join(Turma).filter(
+            Turma.nome == nome,
+            Recurso.escola_id == current_user.escola_id,
+            Reserva.data >= data_inicio,
+            Reserva.data <= data_fim,
+            Reserva.status.notin_(['cancelada', 'nao_realizada'])
+        ).with_entities(
+            Recurso.nome, func.count(Reserva.id)
+        ).group_by(Recurso.nome).order_by(desc(func.count(Reserva.id))).all()
+        
+        turma_recursos_pct = []
+        for rec_nome, rec_total in turma_recursos:
+            rec_pct = round((rec_total / total * 100), 1) if total > 0 else 0
+            turma_recursos_pct.append({'nome': rec_nome, 'total': rec_total, 'pct': rec_pct})
+        
+        top_turmas_com_pct.append({
+            'nome': nome,
+            'total': total,
+            'pct': pct,
+            'recursos': turma_recursos_pct
+        })
     
     return render_template('gestor_escolar/metricas.html',
                            usuario=current_user,

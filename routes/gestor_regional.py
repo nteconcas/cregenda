@@ -288,8 +288,39 @@ def relatorio_escola(id):
         if possibilidade_agendamento < 0:
             possibilidade_agendamento = 0
         
-        # % de agendamento
-        pct_agendamento = round((concretizadas / possibilidade_agendamento * 100), 1) if possibilidade_agendamento > 0 else 0
+        # % de agendamento (concretizadas / total_solicitado * 100)
+        pct_agendamento = round((concretizadas / total_solicitado * 100), 1) if total_solicitado > 0 else 0
+        
+        # Top Professores por Recurso
+        top_professores_recurso = Reserva.query.join(Usuario).filter(
+            Reserva.recurso_id == recurso.id,
+            Reserva.data >= data_inicio,
+            Reserva.data <= data_fim,
+            Reserva.status.notin_(['cancelada', 'nao_realizada'])
+        ).with_entities(
+            Usuario.nome, func.count(Reserva.id)
+        ).group_by(Usuario.nome).order_by(func.count(Reserva.id).desc()).limit(5).all()
+        
+        professores_com_pct = []
+        for nome, total in top_professores_recurso:
+            pct = round((total / total_solicitado * 100), 1) if total_solicitado > 0 else 0
+            professores_com_pct.append({'nome': nome, 'total': total, 'pct': pct})
+        
+        # Top Turmas por Recurso
+        top_turmas_recurso = Reserva.query.join(Turma).filter(
+            Reserva.recurso_id == recurso.id,
+            Reserva.data >= data_inicio,
+            Reserva.data <= data_fim,
+            Reserva.status.notin_(['cancelada', 'nao_realizada']),
+            Reserva.turma_id != None
+        ).with_entities(
+            Turma.nome, func.count(Reserva.id)
+        ).group_by(Turma.nome).order_by(func.count(Reserva.id).desc()).limit(5).all()
+        
+        turmas_com_pct = []
+        for nome, total in top_turmas_recurso:
+            pct = round((total / total_solicitado * 100), 1) if total_solicitado > 0 else 0
+            turmas_com_pct.append({'nome': nome, 'total': total, 'pct': pct})
         
         metricas_recursos.append({
             'nome': recurso.nome,
@@ -297,7 +328,9 @@ def relatorio_escola(id):
             'concretizadas': concretizadas,
             'aproveitamento': aproveitamento,
             'possibilidade_agendamento': possibilidade_agendamento,
-            'pct_agendamento': pct_agendamento
+            'pct_agendamento': pct_agendamento,
+            'professores': professores_com_pct,
+            'turmas': turmas_com_pct
         })
     
     # Ordenar por total solicitado (decrescente)
@@ -307,7 +340,7 @@ def relatorio_escola(id):
     num_recursos = len(recursos)
     capacidade_por_recurso = round(total_slots_periodo / num_recursos, 1) if num_recursos > 0 else 0
     
-    # Professores Mais Ativos
+    # Professores Mais Ativos (com detalhamento por recurso)
     professores_top = db.session.query(
         Usuario.nome, func.count(Reserva.id).label('total')
     ).join(Reserva).join(Recurso).filter(
@@ -322,7 +355,28 @@ def relatorio_escola(id):
     professores_top_com_pct = []
     for nome, total in professores_top:
         pct = round((total / total_reservas * 100), 1) if total_reservas > 0 else 0
-        professores_top_com_pct.append((nome, total, pct))
+        # Reservas por recurso para este professor
+        prof_recursos = Reserva.query.join(Recurso).join(Usuario).filter(
+            Usuario.nome == nome,
+            Recurso.escola_id == id,
+            Reserva.data >= data_inicio,
+            Reserva.data <= data_fim,
+            Reserva.status.notin_(['cancelada', 'nao_realizada'])
+        ).with_entities(
+            Recurso.nome, func.count(Reserva.id)
+        ).group_by(Recurso.nome).order_by(func.count(Reserva.id).desc()).all()
+        
+        prof_recursos_pct = []
+        for rec_nome, rec_total in prof_recursos:
+            rec_pct = round((rec_total / total * 100), 1) if total > 0 else 0
+            prof_recursos_pct.append({'nome': rec_nome, 'total': rec_total, 'pct': rec_pct})
+        
+        professores_top_com_pct.append({
+            'nome': nome,
+            'total': total,
+            'pct': pct,
+            'recursos': prof_recursos_pct
+        })
     
     # Disciplinas/Temáticas Mais Solicitadas (Apenas Confirmadas)
     disciplinas_stats = db.session.query(
@@ -340,6 +394,43 @@ def relatorio_escola(id):
     for nome, total in disciplinas_stats:
         pct = round((total / total_reservas * 100), 1) if total_reservas > 0 else 0
         disciplinas_stats_com_pct.append((nome, total, pct))
+    
+    # Top Turmas (com detalhamento por recurso)
+    top_turmas = db.session.query(
+        Turma.nome, func.count(Reserva.id).label('total')
+    ).join(Reserva).join(Recurso).filter(
+        Recurso.escola_id == id,
+        Reserva.data >= data_inicio,
+        Reserva.data <= data_fim,
+        Reserva.turma_id != None,
+        Reserva.status.notin_(['cancelada', 'nao_realizada'])
+    ).group_by(Turma.id).order_by(func.count(Reserva.id).desc()).limit(5).all()
+    
+    top_turmas_com_pct = []
+    for nome, total in top_turmas:
+        pct = round((total / total_reservas * 100), 1) if total_reservas > 0 else 0
+        # Reservas por recurso para esta turma
+        turma_recursos = Reserva.query.join(Recurso).join(Turma).filter(
+            Turma.nome == nome,
+            Recurso.escola_id == id,
+            Reserva.data >= data_inicio,
+            Reserva.data <= data_fim,
+            Reserva.status.notin_(['cancelada', 'nao_realizada'])
+        ).with_entities(
+            Recurso.nome, func.count(Reserva.id)
+        ).group_by(Recurso.nome).order_by(func.count(Reserva.id).desc()).all()
+        
+        turma_recursos_pct = []
+        for rec_nome, rec_total in turma_recursos:
+            rec_pct = round((rec_total / total * 100), 1) if total > 0 else 0
+            turma_recursos_pct.append({'nome': rec_nome, 'total': rec_total, 'pct': rec_pct})
+        
+        top_turmas_com_pct.append({
+            'nome': nome,
+            'total': total,
+            'pct': pct,
+            'recursos': turma_recursos_pct
+        })
 
     return render_template('gestor_regional/relatorio_escola.html',
                            escola=escola,
@@ -353,6 +444,7 @@ def relatorio_escola(id):
                            capacidade_por_recurso=capacidade_por_recurso,
                            professores_top=professores_top_com_pct,
                            disciplinas_stats=disciplinas_stats_com_pct,
+                           top_turmas=top_turmas_com_pct,
                            usuario=current_user)
 
 
