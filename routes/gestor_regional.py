@@ -288,8 +288,8 @@ def relatorio_escola(id):
         if possibilidade_agendamento < 0:
             possibilidade_agendamento = 0
         
-        # % de agendamento (concretizadas / total_solicitado * 100)
-        pct_agendamento = round((concretizadas / total_solicitado * 100), 1) if total_solicitado > 0 else 0
+        # % de agendamento (concretizadas / possibilidade_agendamento * 100)
+        pct_agendamento = round((concretizadas / possibilidade_agendamento * 100), 1) if possibilidade_agendamento > 0 else 0
         
         # Top Professores por Recurso
         top_professores_recurso = Reserva.query.join(Usuario).filter(
@@ -303,7 +303,7 @@ def relatorio_escola(id):
         
         professores_com_pct = []
         for nome, total in top_professores_recurso:
-            pct = round((total / total_solicitado * 100), 1) if total_solicitado > 0 else 0
+            pct = round((total / possibilidade_agendamento * 100), 1) if possibilidade_agendamento > 0 else 0
             professores_com_pct.append({'nome': nome, 'total': total, 'pct': pct})
         
         # Top Turmas por Recurso
@@ -319,7 +319,7 @@ def relatorio_escola(id):
         
         turmas_com_pct = []
         for nome, total in top_turmas_recurso:
-            pct = round((total / total_solicitado * 100), 1) if total_solicitado > 0 else 0
+            pct = round((total / possibilidade_agendamento * 100), 1) if possibilidade_agendamento > 0 else 0
             turmas_com_pct.append({'nome': nome, 'total': total, 'pct': pct})
         
         metricas_recursos.append({
