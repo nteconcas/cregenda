@@ -1,13 +1,15 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash
+from flask import Blueprint, render_template, request, redirect, url_for, flash, send_file
 from flask_login import login_required, current_user
 from werkzeug.security import generate_password_hash
-from models import db, Usuario, Turma, Recurso, BlocoAula, Reserva, Bloqueio, Vinculo, Disciplina
+from models import db, Usuario, Turma, Recurso, BlocoAula, Reserva, Bloqueio, Vinculo, Disciplina, Escola
 from functools import wraps
 from datetime import date, datetime, timedelta
 import calendar
 from sqlalchemy import func, desc
 from sqlalchemy.orm import joinedload
 from sqlalchemy.exc import IntegrityError, DataError
+from io import BytesIO
+from fpdf import FPDF
 
 gestor_escolar = Blueprint('gestor_escolar', __name__)
 
@@ -1176,3 +1178,148 @@ def metricas():
                            canceladas=canceladas,
                            top_professores=top_professores_com_pct,
                            top_turmas=top_turmas_com_pct)
+
+@gestor_escolar.route('/metricas/pdf')
+@login_required
+@papel_requerido('gestor_escolar')
+def metricas_pdf():
+    data_inicio_str = request.args.get('data_inicio')
+    data_fim_str = request.args.get('data_fim')
+    
+    today = date.today()
+    if not data_inicio_str:
+        data_inicio = date(today.year, today.month, 1)
+    else:
+        try:
+            data_inicio = datetime.strptime(data_inicio_str, '%Y-%m-%d').date()
+        except ValueError:
+            data_inicio = date(today.year, today.month, 1)
+        
+    if not data_fim_str:
+        _, last_day = calendar.monthrange(today.year, today.month)
+        data_fim = date(today.year, today.month, last_day)
+    else:
+        try:
+            data_fim = datetime.strptime(data_fim_str, '%Y-%m-%d').date()
+        except ValueError:
+            _, last_day = calendar.monthrange(today.year, today.month)
+            data_fim = date(today.year, today.month, last_day)
+
+    query_base = Reserva.query.join(Recurso).filter(
+        Recurso.escola_id == current_user.escola_id,
+        Reserva.data >= data_inicio,
+        Reserva.data <= data_fim
+    )
+
+    recursos = Recurso.query.filter_by(escola_id=current_user.escola_id).all()
+
+    blocos = BlocoAula.query.filter_by(escola_id=current_user.escola_id).all()
+    blocos_por_dia = {}
+    for b in blocos:
+        blocos_por_dia[b.dia_semana] = blocos_por_dia.get(b.dia_semana, 0) + 1
+    
+    total_slots_periodo = 0
+    curr = data_inicio
+    while curr <= data_fim:
+        total_slots_periodo += blocos_por_dia.get(curr.weekday(), 0)
+        curr += timedelta(days=1)
+    
+    metricas_recursos = []
+    for recurso in recursos:
+        total_solicitado = Reserva.query.filter(
+            Reserva.recurso_id == recurso.id,
+            Reserva.data >= data_inicio,
+            Reserva.data <= data_fim
+        ).count()
+        
+        concretizadas = Reserva.query.filter(
+            Reserva.recurso_id == recurso.id,
+            Reserva.data >= data_inicio,
+            Reserva.data <= data_fim,
+            Reserva.status == 'confirmada'
+        ).count()
+        
+        aproveitamento = round((concretizadas / total_solicitado * 100), 1) if total_solicitado > 0 else 0
+        
+        num_bloqueios_recurso = Bloqueio.query.filter(
+            Bloqueio.recurso_id == recurso.id,
+            Bloqueio.data >= data_inicio,
+            Bloqueio.data <= data_fim
+        ).count()
+        possibilidade_agendamento = total_slots_periodo - num_bloqueios_recurso
+        if possibilidade_agendamento < 0:
+            possibilidade_agendamento = 0
+        
+        pct_agendamento = round((concretizadas / possibilidade_agendamento * 100), 1) if possibilidade_agendamento > 0 else 0
+        
+        metricas_recursos.append({
+            'nome': recurso.nome,
+            'total_solicitado': total_solicitado,
+            'concretizadas': concretizadas,
+            'aproveitamento': aproveitamento,
+            'possibilidade_agendamento': possibilidade_agendamento,
+            'pct_agendamento': pct_agendamento
+        })
+
+    status_counts = query_base.with_entities(
+        Reserva.status, func.count(Reserva.id)
+    ).group_by(Reserva.status).all()
+    
+    status_dict = {s: c for s, c in status_counts}
+    realizadas = status_dict.get('confirmada', 0)
+    nao_realizadas = status_dict.get('nao_realizada', 0)
+    canceladas = status_dict.get('cancelada', 0)
+    
+    num_recursos = len(recursos)
+    num_bloqueios = Bloqueio.query.join(Recurso).filter(
+        Recurso.escola_id == current_user.escola_id,
+        Bloqueio.data >= data_inicio,
+        Bloqueio.data <= data_fim
+    ).count()
+
+    total_possiveis = (total_slots_periodo * num_recursos) - num_bloqueios
+    if total_possiveis < 0:
+        total_possiveis = 0
+    capacidade_por_recurso = round(total_possiveis / num_recursos, 1) if num_recursos > 0 else 0
+    
+    escola = Escola.query.get(current_user.escola_id)
+    escola_nome = escola.nome if escola else 'Escola'
+
+    pdf = FPDF(orientation='P', unit='mm', format='A4')
+    pdf.set_auto_page_break(auto=True, margin=15)
+    pdf.add_page()
+    pdf.set_font('Helvetica', 'B', 16)
+    pdf.multi_cell(0, 8, f"Relatorio de Metricas - {escola_nome}")
+    pdf.set_font('Helvetica', '', 10)
+    pdf.cell(0, 6, f"Periodo: {data_inicio.strftime('%d/%m/%Y')} ate {data_fim.strftime('%d/%m/%Y')}", ln=True)
+    pdf.cell(0, 6, f"Gerado em: {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}", ln=True)
+    pdf.ln(2)
+
+    pdf.set_font('Helvetica', 'B', 12)
+    pdf.cell(0, 7, "Resumo", ln=True)
+    pdf.set_font('Helvetica', '', 10)
+    pdf.cell(0, 6, f"Realizadas: {realizadas}", ln=True)
+    pdf.cell(0, 6, f"Nao concretizadas: {nao_realizadas}", ln=True)
+    pdf.cell(0, 6, f"Canceladas: {canceladas}", ln=True)
+    pdf.cell(0, 6, f"Total possiveis: {total_possiveis}", ln=True)
+    pdf.cell(0, 6, f"Capacidade por recurso: {capacidade_por_recurso}", ln=True)
+    pdf.ln(2)
+
+    pdf.set_font('Helvetica', 'B', 12)
+    pdf.cell(0, 7, "Metricas por recurso", ln=True)
+    pdf.set_font('Helvetica', '', 9)
+    if metricas_recursos:
+        metricas_recursos.sort(key=lambda r: r['total_solicitado'], reverse=True)
+        for r in metricas_recursos:
+            pdf.multi_cell(
+                0,
+                5,
+                f"- {r['nome']} | Solicitado: {r['total_solicitado']} | Concretizadas: {r['concretizadas']} | Aproveitamento: {r['aproveitamento']}% | Possib.: {r['possibilidade_agendamento']} | % Agend.: {r['pct_agendamento']}%"
+            )
+    else:
+        pdf.cell(0, 6, "Sem dados no periodo.", ln=True)
+
+    safe_name = ''.join([c if c.isalnum() or c in ('_', '-') else '_' for c in escola_nome.replace(' ', '_')])
+    filename = f"relatorio_metricas_{safe_name}.pdf"
+    content = pdf.output(dest='S').encode('latin1', errors='replace')
+    return send_file(BytesIO(content), mimetype='application/pdf', as_attachment=True, download_name=filename)

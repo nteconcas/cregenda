@@ -1,11 +1,13 @@
 # routes/gestor_regional.py
-from flask import Blueprint, render_template, request, redirect, url_for, flash
+from flask import Blueprint, render_template, request, redirect, url_for, flash, send_file
 from flask_login import login_required, current_user
 from werkzeug.security import generate_password_hash
 from models import db, Usuario, Escola, Regiao, Recurso, Reserva, Turma, Disciplina, BlocoAula, Bloqueio
 from functools import wraps
 from datetime import datetime, date, timedelta
 from sqlalchemy import func, case
+from io import BytesIO
+from fpdf import FPDF
 
 def papel_requerido(papel):
     def decorator(f):
@@ -495,5 +497,223 @@ def relatorio_escola(id):
                            disciplinas_stats=disciplinas_stats_com_pct,
                            top_turmas=top_turmas_com_pct,
                            usuario=current_user)
+
+@gestor_regional.route('/relatorio_escola/<int:id>/pdf')
+@login_required
+@papel_requerido('gestor_regional')
+def relatorio_escola_pdf(id):
+    escola = Escola.query.filter_by(id=id, regiao_id=current_user.regiao_id).first_or_404()
+    
+    data_inicio_str = request.args.get('data_inicio')
+    data_fim_str = request.args.get('data_fim')
+
+    hoje = date.today()
+    if not data_inicio_str:
+        data_inicio = date(hoje.year, hoje.month, 1)
+    else:
+        data_inicio = datetime.strptime(data_inicio_str, '%Y-%m-%d').date()
+        
+    if not data_fim_str:
+        if hoje.month == 12:
+            proximo_mes = date(hoje.year + 1, 1, 1)
+        else:
+            proximo_mes = date(hoje.year, hoje.month + 1, 1)
+        data_fim = proximo_mes - timedelta(days=1)
+    else:
+        data_fim = datetime.strptime(data_fim_str, '%Y-%m-%d').date()
+    
+    reservas_periodo_query = Reserva.query.join(Recurso).filter(
+        Recurso.escola_id == id,
+        Reserva.data >= data_inicio,
+        Reserva.data <= data_fim
+    )
+    
+    total_geral = reservas_periodo_query.count()
+    total_nao_realizadas = reservas_periodo_query.filter(Reserva.status == 'nao_realizada').count()
+    total_reservas = reservas_periodo_query.filter(
+        Reserva.status.notin_(['cancelada', 'nao_realizada'])
+    ).count()
+
+    reservas_por_status = db.session.query(
+        Reserva.status, func.count(Reserva.id)
+    ).join(Recurso).filter(
+        Recurso.escola_id == id,
+        Reserva.data >= data_inicio,
+        Reserva.data <= data_fim
+    ).group_by(Reserva.status).all()
+    
+    recursos = Recurso.query.filter_by(escola_id=id).all()
+    blocos = BlocoAula.query.filter_by(escola_id=id).all()
+    blocos_por_dia = {}
+    for b in blocos:
+        blocos_por_dia[b.dia_semana] = blocos_por_dia.get(b.dia_semana, 0) + 1
+    
+    total_slots_periodo = 0
+    curr = data_inicio
+    while curr <= data_fim:
+        total_slots_periodo += blocos_por_dia.get(curr.weekday(), 0)
+        curr += timedelta(days=1)
+    
+    metricas_recursos = []
+    for recurso in recursos:
+        total_solicitado = Reserva.query.filter(
+            Reserva.recurso_id == recurso.id,
+            Reserva.data >= data_inicio,
+            Reserva.data <= data_fim
+        ).count()
+        
+        concretizadas = Reserva.query.filter(
+            Reserva.recurso_id == recurso.id,
+            Reserva.data >= data_inicio,
+            Reserva.data <= data_fim,
+            Reserva.status == 'confirmada'
+        ).count()
+        
+        aproveitamento = round((concretizadas / total_solicitado * 100), 1) if total_solicitado > 0 else 0
+        
+        num_bloqueios_recurso = Bloqueio.query.filter(
+            Bloqueio.recurso_id == recurso.id,
+            Bloqueio.data >= data_inicio,
+            Bloqueio.data <= data_fim
+        ).count()
+        possibilidade_agendamento = total_slots_periodo - num_bloqueios_recurso
+        if possibilidade_agendamento < 0:
+            possibilidade_agendamento = 0
+        
+        pct_agendamento = round((concretizadas / possibilidade_agendamento * 100), 1) if possibilidade_agendamento > 0 else 0
+        
+        metricas_recursos.append({
+            'nome': recurso.nome,
+            'total_solicitado': total_solicitado,
+            'concretizadas': concretizadas,
+            'aproveitamento': aproveitamento,
+            'possibilidade_agendamento': possibilidade_agendamento,
+            'pct_agendamento': pct_agendamento
+        })
+    
+    metricas_recursos.sort(key=lambda r: r['total_solicitado'], reverse=True)
+
+    num_recursos = len(recursos)
+    capacidade_por_recurso = round(total_slots_periodo / num_recursos, 1) if num_recursos > 0 else 0
+
+    professores_top = db.session.query(
+        Usuario.nome, func.count(Reserva.id).label('total')
+    ).join(Reserva).join(Recurso).filter(
+        Recurso.escola_id == id,
+        Reserva.data >= data_inicio,
+        Reserva.data <= data_fim,
+        Usuario.papel == 'professor',
+        Reserva.status.notin_(['cancelada', 'nao_realizada'])
+    ).group_by(Usuario.id).order_by(func.count(Reserva.id).desc()).limit(10).all()
+
+    professores_top_com_pct = []
+    for nome, total in professores_top:
+        pct = round((total / total_reservas * 100), 1) if total_reservas > 0 else 0
+        professores_top_com_pct.append({'nome': nome, 'total': total, 'pct': pct})
+
+    disciplinas_stats = db.session.query(
+        Disciplina.nome, func.count(Reserva.id).label('total')
+    ).join(Reserva).join(Recurso).filter(
+        Recurso.escola_id == id,
+        Reserva.data >= data_inicio,
+        Reserva.data <= data_fim,
+        Reserva.disciplina_id != None,
+        Reserva.status.notin_(['cancelada', 'nao_realizada'])
+    ).group_by(Disciplina.id).order_by(func.count(Reserva.id).desc()).limit(10).all()
+
+    disciplinas_stats_com_pct = []
+    for nome, total in disciplinas_stats:
+        pct = round((total / total_reservas * 100), 1) if total_reservas > 0 else 0
+        disciplinas_stats_com_pct.append((nome, total, pct))
+
+    top_turmas = db.session.query(
+        Turma.nome, func.count(Reserva.id).label('total')
+    ).join(Reserva).join(Recurso).filter(
+        Recurso.escola_id == id,
+        Reserva.data >= data_inicio,
+        Reserva.data <= data_fim,
+        Reserva.turma_id != None,
+        Reserva.status.notin_(['cancelada', 'nao_realizada'])
+    ).group_by(Turma.id).order_by(func.count(Reserva.id).desc()).limit(10).all()
+
+    top_turmas_com_pct = []
+    for nome, total in top_turmas:
+        pct = round((total / total_reservas * 100), 1) if total_reservas > 0 else 0
+        top_turmas_com_pct.append({'nome': nome, 'total': total, 'pct': pct})
+
+    pdf = FPDF(orientation='P', unit='mm', format='A4')
+    pdf.set_auto_page_break(auto=True, margin=15)
+    pdf.add_page()
+    pdf.set_font('Helvetica', 'B', 16)
+    pdf.multi_cell(0, 8, f"Relatorio de Metricas - {escola.nome}")
+    pdf.set_font('Helvetica', '', 10)
+    pdf.cell(0, 6, f"Periodo: {data_inicio.strftime('%d/%m/%Y')} ate {data_fim.strftime('%d/%m/%Y')}", ln=True)
+    pdf.cell(0, 6, f"Gerado em: {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}", ln=True)
+    pdf.ln(2)
+
+    pdf.set_font('Helvetica', 'B', 12)
+    pdf.cell(0, 7, "Resumo", ln=True)
+    pdf.set_font('Helvetica', '', 10)
+    pdf.cell(0, 6, f"Total (geral): {total_geral}", ln=True)
+    pdf.cell(0, 6, f"Total (validas): {total_reservas}", ln=True)
+    pdf.cell(0, 6, f"Total nao concretizadas: {total_nao_realizadas}", ln=True)
+    pdf.cell(0, 6, f"Capacidade por recurso: {capacidade_por_recurso}", ln=True)
+    pdf.ln(2)
+
+    if reservas_por_status:
+        pdf.set_font('Helvetica', 'B', 12)
+        pdf.cell(0, 7, "Reservas por status", ln=True)
+        pdf.set_font('Helvetica', '', 10)
+        for status, count in reservas_por_status:
+            pdf.cell(0, 6, f"- {status}: {count}", ln=True)
+        pdf.ln(2)
+
+    pdf.set_font('Helvetica', 'B', 12)
+    pdf.cell(0, 7, "Metricas por recurso", ln=True)
+    pdf.set_font('Helvetica', '', 9)
+    if metricas_recursos:
+        for r in metricas_recursos:
+            pdf.multi_cell(
+                0,
+                5,
+                f"- {r['nome']} | Solicitado: {r['total_solicitado']} | Concretizadas: {r['concretizadas']} | Aproveitamento: {r['aproveitamento']}% | Possib.: {r['possibilidade_agendamento']} | % Agend.: {r['pct_agendamento']}%"
+            )
+    else:
+        pdf.cell(0, 6, "Sem dados no periodo.", ln=True)
+    pdf.ln(2)
+
+    pdf.set_font('Helvetica', 'B', 12)
+    pdf.cell(0, 7, "Professores mais ativos", ln=True)
+    pdf.set_font('Helvetica', '', 9)
+    if professores_top_com_pct:
+        for p in professores_top_com_pct:
+            pdf.multi_cell(0, 5, f"- {p['nome']} | Total: {p['total']} | % Geral: {p['pct']}%")
+    else:
+        pdf.cell(0, 6, "Sem dados no periodo.", ln=True)
+    pdf.ln(2)
+
+    pdf.set_font('Helvetica', 'B', 12)
+    pdf.cell(0, 7, "Turmas com mais reservas", ln=True)
+    pdf.set_font('Helvetica', '', 9)
+    if top_turmas_com_pct:
+        for t in top_turmas_com_pct:
+            pdf.multi_cell(0, 5, f"- {t['nome']} | Reservas: {t['total']} | %: {t['pct']}%")
+    else:
+        pdf.cell(0, 6, "Sem dados no periodo.", ln=True)
+    pdf.ln(2)
+
+    pdf.set_font('Helvetica', 'B', 12)
+    pdf.cell(0, 7, "Disciplinas com mais reservas", ln=True)
+    pdf.set_font('Helvetica', '', 9)
+    if disciplinas_stats_com_pct:
+        for nome, total, pct in disciplinas_stats_com_pct:
+            pdf.multi_cell(0, 5, f"- {nome} | Reservas: {total} | %: {pct}%")
+    else:
+        pdf.cell(0, 6, "Sem dados no periodo.", ln=True)
+
+    safe_name = ''.join([c if c.isalnum() or c in ('_', '-') else '_' for c in escola.nome.replace(' ', '_')])
+    filename = f"relatorio_{safe_name}.pdf"
+    content = pdf.output(dest='S').encode('latin1', errors='replace')
+    return send_file(BytesIO(content), mimetype='application/pdf', as_attachment=True, download_name=filename)
 
 
