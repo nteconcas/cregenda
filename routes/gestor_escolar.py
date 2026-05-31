@@ -1327,5 +1327,6 @@ def metricas_pdf():
 
     safe_name = ''.join([c if c.isalnum() or c in ('_', '-') else '_' for c in escola_nome.replace(' ', '_')])
     filename = f"relatorio_metricas_{safe_name}.pdf"
-    content = pdf.output(dest='S').encode('latin1', errors='replace')
+    raw = pdf.output(dest='S')
+    content = raw.encode('latin1', errors='replace') if isinstance(raw, str) else bytes(raw)
     return send_file(BytesIO(content), mimetype='application/pdf', as_attachment=True, download_name=filename)
