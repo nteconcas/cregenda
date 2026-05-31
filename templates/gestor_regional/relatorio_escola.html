@@ -650,7 +650,14 @@
     const recursoHeaders = ['Recurso', 'Total Solicitado', 'Concretizadas', 'Aproveitamento', 'Possib.', '% Agend.'];
     const recursoRows = [
         {% for r in metricas_recursos %}
-        ['{{ r.nome }}', '{{ r.total_solicitado }}', '{{ r.concretizadas }}', '{{ r.aproveitamento }}%', '{{ r.possibilidade_agendamento }}', '{{ r.pct_agendamento }}%'],
+        [
+            {{ r.nome|tojson }},
+            {{ r.total_solicitado|tojson }},
+            {{ r.concretizadas|tojson }},
+            {{ (r.aproveitamento ~ '%')|tojson }},
+            {{ r.possibilidade_agendamento|tojson }},
+            {{ (r.pct_agendamento ~ '%')|tojson }}
+        ],
         {% endfor %}
     ];
     yPos = addTableToPDF(recursoHeaders, recursoRows, yPos);
@@ -706,7 +713,7 @@
     const turmaHeaders = ['Turma', 'Reservas', '%'];
     const turmaRows = [
         {% for turma in top_turmas %}
-        ['{{ turma.nome }}', '{{ turma.total }}', '{{ turma.pct }}%'],
+        [{{ turma.nome|tojson }}, {{ turma.total|tojson }}, {{ (turma.pct ~ '%')|tojson }}],
         {% endfor %}
     ];
     yPos = addTableToPDF(turmaHeaders, turmaRows, yPos);
@@ -726,7 +733,7 @@
     const discHeaders = ['Disciplina', 'Reservas', '%'];
     const discRows = [
         {% for nome, total, pct in disciplinas_stats %}
-        ['{{ nome }}', '{{ total }}', '{{ pct }}%'],
+        [{{ nome|tojson }}, {{ total|tojson }}, {{ (pct ~ '%')|tojson }}],
         {% endfor %}
     ];
     yPos = addTableToPDF(discHeaders, discRows, yPos);
@@ -755,7 +762,7 @@
     const profRecHeaders = ['Professor', 'Reservas', '%'];
     const profRecRows = [
         {% for prof in r.professores %}
-        ['{{ prof.nome }}', '{{ prof.total }}', '{{ prof.pct }}%'],
+        [{{ prof.nome|tojson }}, {{ prof.total|tojson }}, {{ (prof.pct ~ '%')|tojson }}],
         {% endfor %}
     ];
     yPos = addTableToPDF(profRecHeaders, profRecRows, yPos);
@@ -776,7 +783,7 @@
     const turmaRecHeaders = ['Turma', 'Reservas', '%'];
     const turmaRecRows = [
         {% for turma in r.turmas %}
-        ['{{ turma.nome }}', '{{ turma.total }}', '{{ turma.pct }}%'],
+        [{{ turma.nome|tojson }}, {{ turma.total|tojson }}, {{ (turma.pct ~ '%')|tojson }}],
         {% endfor %}
     ];
     yPos = addTableToPDF(turmaRecHeaders, turmaRecRows, yPos);
