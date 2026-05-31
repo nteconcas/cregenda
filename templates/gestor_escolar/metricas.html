@@ -4,7 +4,7 @@
 {% block content %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" onerror="this.onerror=null;this.src='https://unpkg.com/jspdf@2.5.1/dist/jspdf.umd.min.js'"></script>
 
 <div class="flex flex-col gap-6 pb-10" id="metrics-container">
     <!-- Header & Filters -->
@@ -480,6 +480,12 @@
 
     // --- PDF Export ---
     async function exportPDF() {
+        if (!window.jspdf || !window.jspdf.jsPDF) {
+            alert('Não foi possível carregar a biblioteca de exportação em PDF. Verifique sua conexão com a internet (CDN) e tente novamente.');
+            return;
+        }
+
+        try {
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF('p', 'mm', 'a4');
         const pageWidth = doc.internal.pageSize.getWidth();
@@ -525,7 +531,7 @@
             doc.setFillColor(79, 70, 229);
             doc.setTextColor(255, 255, 255);
             doc.setFontSize(8);
-            doc.setFont(undefined, 'bold');
+            doc.setFont('helvetica', 'bold');
             
             let xPos = margin;
             headers.forEach((header, i) => {
@@ -536,7 +542,7 @@
 
             // Linhas
             doc.setTextColor(40, 40, 40);
-            doc.setFont(undefined, 'normal');
+            doc.setFont('helvetica', 'normal');
             doc.setFontSize(7);
             
             let currentY = startY + rowHeight;
@@ -549,7 +555,7 @@
                     // Redesenhar cabeçalho
                     doc.setFillColor(79, 70, 229);
                     doc.setTextColor(255, 255, 255);
-                    doc.setFont(undefined, 'bold');
+                    doc.setFont('helvetica', 'bold');
                     xPos = margin;
                     headers.forEach((header, i) => {
                         doc.rect(xPos, currentY, colWidths[i], rowHeight, 'F');
@@ -558,7 +564,7 @@
                     });
                     currentY += rowHeight;
                     doc.setTextColor(40, 40, 40);
-                    doc.setFont(undefined, 'normal');
+                    doc.setFont('helvetica', 'normal');
                 }
 
                 // Fundo zebrado
@@ -587,7 +593,7 @@
         // 1. Tabela de Métricas por Recurso
         doc.setFontSize(12);
         doc.setTextColor(40, 40, 40);
-        doc.setFont(undefined, 'bold');
+        doc.setFont('helvetica', 'bold');
         doc.text('Métricas por Recurso', margin, yPos);
         yPos += 6;
 
@@ -607,7 +613,7 @@
         }
         doc.setFontSize(12);
         doc.setTextColor(40, 40, 40);
-        doc.setFont(undefined, 'bold');
+        doc.setFont('helvetica', 'bold');
         doc.text('Top 10 Professores', margin, yPos);
         yPos += 6;
 
@@ -644,7 +650,7 @@
         }
         doc.setFontSize(12);
         doc.setTextColor(40, 40, 40);
-        doc.setFont(undefined, 'bold');
+        doc.setFont('helvetica', 'bold');
         doc.text('Top 10 Turmas', margin, yPos);
         yPos += 6;
 
@@ -666,7 +672,7 @@
         }
         doc.setFontSize(12);
         doc.setTextColor(40, 40, 40);
-        doc.setFont(undefined, 'bold');
+        doc.setFont('helvetica', 'bold');
         doc.text('Detalhamento: {{ r.nome }}', margin, yPos);
         yPos += 6;
 
@@ -674,7 +680,7 @@
         {% if r.professores %}
         doc.setFontSize(10);
         doc.setTextColor(100, 100, 100);
-        doc.setFont(undefined, 'bold');
+        doc.setFont('helvetica', 'bold');
         doc.text('Professores', margin, yPos);
         yPos += 5;
         const profRecHeaders = ['Professor', 'Reservas', '%'];
@@ -695,7 +701,7 @@
         }
         doc.setFontSize(10);
         doc.setTextColor(100, 100, 100);
-        doc.setFont(undefined, 'bold');
+        doc.setFont('helvetica', 'bold');
         doc.text('Turmas', margin, yPos);
         yPos += 5;
         const turmaRecHeaders = ['Turma', 'Reservas', '%'];
@@ -712,6 +718,10 @@
         {% endfor %}
 
         doc.save('relatorio_metricas.pdf');
+        } catch (e) {
+            console.error(e);
+            alert('Falha ao gerar o PDF. Tente novamente e, se persistir, verifique o console do navegador para detalhes.');
+        }
     }
 </script>
 

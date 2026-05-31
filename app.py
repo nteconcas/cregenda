@@ -32,9 +32,9 @@ def create_app():
     # Log para confirmar qual banco está sendo usado (sem mostrar senha)
     db_url = app.config.get('SQLALCHEMY_DATABASE_URI', '')
     if 'sqlite' in db_url:
-        print("⚠️  AVISO: Usando banco de dados SQLite Local. Verifique se DATABASE_URL está configurada.")
+        print("AVISO: Usando banco de dados SQLite Local. Verifique se DATABASE_URL está configurada.")
     else:
-        print("✅ Usando banco de dados externo/produção.")
+        print("OK: Usando banco de dados externo/producao.")
 
     db.init_app(app)
     
@@ -72,7 +72,7 @@ def create_app():
     def log_request_info():
         # Apenas logar se não for static
         if not request.path.startswith('/static'):
-            print(f"📡 Request: {request.method} {request.url}")
+            print(f"Request: {request.method} {request.url}")
             print(f"Headers: {dict(request.headers)}")
 
     # Rota central de dashboard
@@ -108,7 +108,7 @@ def create_app():
     # Rota de fallback para capturar 404 e logar
     @app.errorhandler(404)
     def page_not_found(e):
-        print(f"❌ 404 Error na URL: {request.url}")
+        print(f"404 Error na URL: {request.url}")
         return "Página não encontrada (404). Verifique a URL.", 404
 
     # Criação do usuário admin
