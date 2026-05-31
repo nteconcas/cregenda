@@ -644,8 +644,10 @@ def relatorio_escola_pdf(id):
     pdf = FPDF(orientation='P', unit='mm', format='A4')
     pdf.set_auto_page_break(auto=True, margin=15)
     pdf.add_page()
+    effective_width = pdf.w - pdf.l_margin - pdf.r_margin
     pdf.set_font('Helvetica', 'B', 16)
-    pdf.multi_cell(0, 8, f"Relatorio de Metricas - {escola.nome}")
+    pdf.set_x(pdf.l_margin)
+    pdf.multi_cell(effective_width, 8, f"Relatorio de Metricas - {escola.nome}", new_x="LMARGIN", new_y="NEXT", wrapmode="CHAR")
     pdf.set_font('Helvetica', '', 10)
     pdf.cell(0, 6, f"Periodo: {data_inicio.strftime('%d/%m/%Y')} ate {data_fim.strftime('%d/%m/%Y')}", ln=True)
     pdf.cell(0, 6, f"Gerado em: {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}", ln=True)
@@ -673,10 +675,14 @@ def relatorio_escola_pdf(id):
     pdf.set_font('Helvetica', '', 9)
     if metricas_recursos:
         for r in metricas_recursos:
+            pdf.set_x(pdf.l_margin)
             pdf.multi_cell(
-                0,
+                effective_width,
                 5,
-                f"- {r['nome']} | Solicitado: {r['total_solicitado']} | Concretizadas: {r['concretizadas']} | Aproveitamento: {r['aproveitamento']}% | Possib.: {r['possibilidade_agendamento']} | % Agend.: {r['pct_agendamento']}%"
+                f"- {r['nome']} | Solicitado: {r['total_solicitado']} | Concretizadas: {r['concretizadas']} | Aproveitamento: {r['aproveitamento']}% | Possib.: {r['possibilidade_agendamento']} | % Agend.: {r['pct_agendamento']}%",
+                new_x="LMARGIN",
+                new_y="NEXT",
+                wrapmode="CHAR"
             )
     else:
         pdf.cell(0, 6, "Sem dados no periodo.", ln=True)
@@ -687,7 +693,8 @@ def relatorio_escola_pdf(id):
     pdf.set_font('Helvetica', '', 9)
     if professores_top_com_pct:
         for p in professores_top_com_pct:
-            pdf.multi_cell(0, 5, f"- {p['nome']} | Total: {p['total']} | % Geral: {p['pct']}%")
+            pdf.set_x(pdf.l_margin)
+            pdf.multi_cell(effective_width, 5, f"- {p['nome']} | Total: {p['total']} | % Geral: {p['pct']}%", new_x="LMARGIN", new_y="NEXT", wrapmode="CHAR")
     else:
         pdf.cell(0, 6, "Sem dados no periodo.", ln=True)
     pdf.ln(2)
@@ -697,7 +704,8 @@ def relatorio_escola_pdf(id):
     pdf.set_font('Helvetica', '', 9)
     if top_turmas_com_pct:
         for t in top_turmas_com_pct:
-            pdf.multi_cell(0, 5, f"- {t['nome']} | Reservas: {t['total']} | %: {t['pct']}%")
+            pdf.set_x(pdf.l_margin)
+            pdf.multi_cell(effective_width, 5, f"- {t['nome']} | Reservas: {t['total']} | %: {t['pct']}%", new_x="LMARGIN", new_y="NEXT", wrapmode="CHAR")
     else:
         pdf.cell(0, 6, "Sem dados no periodo.", ln=True)
     pdf.ln(2)
@@ -707,7 +715,8 @@ def relatorio_escola_pdf(id):
     pdf.set_font('Helvetica', '', 9)
     if disciplinas_stats_com_pct:
         for nome, total, pct in disciplinas_stats_com_pct:
-            pdf.multi_cell(0, 5, f"- {nome} | Reservas: {total} | %: {pct}%")
+            pdf.set_x(pdf.l_margin)
+            pdf.multi_cell(effective_width, 5, f"- {nome} | Reservas: {total} | %: {pct}%", new_x="LMARGIN", new_y="NEXT", wrapmode="CHAR")
     else:
         pdf.cell(0, 6, "Sem dados no periodo.", ln=True)
 
