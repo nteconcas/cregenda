@@ -600,7 +600,7 @@
         yPos = addTableToPDF(recursoHeaders, recursoRows, yPos);
         yPos += 8;
 
-        // 2. Tabela de Professores
+        // 2. Tabela de Professores com detalhamento por recurso
         if (yPos + 30 > pageHeight - margin) {
             doc.addPage();
             yPos = margin + 5;
@@ -611,12 +611,29 @@
         doc.text('Top 10 Professores', margin, yPos);
         yPos += 6;
 
-    const profHeaders = ['Professor', 'Reservas', '%'];
-    const profRows = [
-        {% for prof in top_professores %}
-        ['{{ prof.nome }}', '{{ prof.total }}', '{{ prof.pct }}%'],
-        {% endfor %}
-    ];
+        // Cabeçalho com colunas de recursos
+        const profHeaders = ['Professor', 'Total', '% Geral'{% for r in metricas_recursos %}, '{{ r.nome }}'{% endfor %}];
+        const profRows = [
+            {% for prof in top_professores %}
+            [
+                '{{ prof.nome }}',
+                '{{ prof.total }}',
+                '{{ prof.pct }}%',
+                {% for r in metricas_recursos %}
+                {% set ns = namespace(found=false) %}
+                {% for rec in prof.recursos %}
+                {% if rec.nome == r.nome %}
+                {% set ns.found = true %}
+                '{{ rec.total }}({{ rec.pct }}%)',
+                {% endif %}
+                {% endfor %}
+                {% if not ns.found %}
+                '-',
+                {% endif %}
+                {% endfor %}
+            ],
+            {% endfor %}
+        ];
         yPos = addTableToPDF(profHeaders, profRows, yPos);
         yPos += 8;
 
