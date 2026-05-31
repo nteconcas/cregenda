@@ -613,27 +613,26 @@
 
         // Cabeçalho com colunas de recursos
         const profHeaders = ['Professor', 'Total', '% Geral'{% for r in metricas_recursos %}, '{{ r.nome }}'{% endfor %}];
-        const profRows = [
-            {% for prof in top_professores %}
-            [
-                '{{ prof.nome }}',
-                '{{ prof.total }}',
-                '{{ prof.pct }}%',
-                {% for r in metricas_recursos %}
-                {% set ns = namespace(found=false) %}
-                {% for rec in prof.recursos %}
-                {% if rec.nome == r.nome %}
-                {% set ns.found = true %}
-                '{{ rec.total }}({{ rec.pct }}%)',
-                {% endif %}
-                {% endfor %}
-                {% if not ns.found %}
-                '-',
-                {% endif %}
-                {% endfor %}
-            ],
+        const profRows = [];
+        {% for prof in top_professores %}
+        profRows.push([
+            '{{ prof.nome }}',
+            '{{ prof.total }}',
+            '{{ prof.pct }}%',
+            {% for r in metricas_recursos %}
+            {% set ns = namespace(found=false) %}
+            {% for rec in prof.recursos %}
+            {% if rec.nome == r.nome %}
+            {% set ns.found = true %}
+            '{{ rec.total }}({{ rec.pct }}%)',
+            {% endif %}
             {% endfor %}
-        ];
+            {% if not ns.found %}
+            '-',
+            {% endif %}
+            {% endfor %}
+        ]);
+        {% endfor %}
         yPos = addTableToPDF(profHeaders, profRows, yPos);
         yPos += 8;
 
