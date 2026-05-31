@@ -661,9 +661,9 @@
     doc.text('Professores Mais Ativos', margin, yPos);
     yPos += 6;
 
-    const profHeaders = ['Professor', 'Total', '% Geral'{% for r in metricas_recursos %}, '{{ r.nome }}'{% endfor %}];
-    const profData = {{ professores_top|tojson }};
     const profRecursosNomes = {{ metricas_recursos|map(attribute='nome')|list|tojson }};
+    const profHeaders = ['Professor', 'Total', '% Geral'].concat(profRecursosNomes);
+    const profData = {{ professores_top|tojson }};
     const profRows = [];
     profData.forEach(function(prof) {
         var row = [prof.nome, prof.total, prof.pct + '%'];
