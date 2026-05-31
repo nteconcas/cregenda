@@ -30,7 +30,7 @@
                     </button>
                 </form>
                 
-                <button onclick="exportPDF()" class="w-full sm:w-auto bg-gray-800 text-white px-3 sm:px-4 py-2 rounded text-xs sm:text-sm font-medium hover:bg-gray-900 transition-colors flex items-center justify-center gap-2">
+                <button type="button" onclick="exportPDF()" class="w-full sm:w-auto bg-gray-800 text-white px-3 sm:px-4 py-2 rounded text-xs sm:text-sm font-medium hover:bg-gray-900 transition-colors flex items-center justify-center gap-2">
                     <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
                     <span class="hidden sm:inline">Exportar PDF</span>
                     <span class="sm:hidden">PDF</span>
@@ -147,7 +147,7 @@
                     </thead>
                     <tbody>
                         {% for prof in top_professores %}
-                        <tr class="border-b last:border-0 hover:bg-gray-50 cursor-pointer" onclick="abrirModalProf('{{ prof.nome|e }}', {{ prof.total }}, '{{ prof.pct }}', {{ prof.recursos|tojson }})">
+                        <tr class="border-b last:border-0 hover:bg-gray-50 cursor-pointer" onclick="abrirModalProf({{ prof.nome|tojson }}, {{ prof.total|tojson }}, {{ prof.pct|tojson }}, {{ prof.recursos|tojson }})">
                             <td class="p-3 font-medium text-gray-800 truncate max-w-[150px]" title="{{ prof.nome }}">
                                 <span class="flex items-center gap-2">
                                     <i class="fas fa-search text-xs text-gray-400"></i>
@@ -208,7 +208,7 @@
                         {% else %}
                             <p class="text-gray-400 italic text-sm text-center">Sem dados no período</p>
                         {% endif %}
-                        <button onclick="event.stopPropagation(); abrirModalProf('{{ prof.nome|e }}', {{ prof.total }}, '{{ prof.pct }}', {{ prof.recursos|tojson }})" class="w-full mt-2 text-xs text-indigo-600 hover:text-indigo-800 font-medium py-1 border-t border-gray-200 pt-2">
+                        <button type="button" onclick="event.stopPropagation(); abrirModalProf({{ prof.nome|tojson }}, {{ prof.total|tojson }}, {{ prof.pct|tojson }}, {{ prof.recursos|tojson }})" class="w-full mt-2 text-xs text-indigo-600 hover:text-indigo-800 font-medium py-1 border-t border-gray-200 pt-2">
                             <i class="fas fa-expand"></i> Ver detalhes completos
                         </button>
                     </div>
@@ -235,7 +235,7 @@
                     </thead>
                     <tbody>
                         {% for turma in top_turmas %}
-                        <tr class="border-b last:border-0 hover:bg-gray-50 cursor-pointer" onclick="abrirModalTurma('{{ turma.nome|e }}', {{ turma.total }}, '{{ turma.pct }}', {{ turma.recursos|tojson }})">
+                        <tr class="border-b last:border-0 hover:bg-gray-50 cursor-pointer" onclick="abrirModalTurma({{ turma.nome|tojson }}, {{ turma.total|tojson }}, {{ turma.pct|tojson }}, {{ turma.recursos|tojson }})">
                             <td class="p-3 truncate max-w-[200px] hover:text-indigo-600" title="{{ turma.nome }}">
                                 <span class="flex items-center gap-2">
                                     <i class="fas fa-search text-xs text-gray-400"></i>
@@ -479,7 +479,7 @@
     });
 
     // --- PDF Export ---
-    async function exportPDF() {
+    function exportPDF() {
         if (!window.jspdf || !window.jspdf.jsPDF) {
             alert('Não foi possível carregar a biblioteca de exportação em PDF. Verifique sua conexão com a internet (CDN) e tente novamente.');
             return;
@@ -500,7 +500,7 @@
         
         doc.setFontSize(10);
         doc.setTextColor(100, 100, 100);
-        doc.text('Período: {{ data_inicio.strftime("%d/%m/%Y") }} até {{ data_fim.strftime("%d/%m/%Y") }}', margin, margin + 12);
+        doc.text({{ ('Período: ' ~ data_inicio.strftime('%d/%m/%Y') ~ ' até ' ~ data_fim.strftime('%d/%m/%Y'))|tojson }}, margin, margin + 12);
         
         doc.setFontSize(8);
         doc.setTextColor(150, 150, 150);
@@ -680,7 +680,7 @@
         doc.setFontSize(12);
         doc.setTextColor(40, 40, 40);
         doc.setFont('helvetica', 'bold');
-        doc.text('Detalhamento: {{ r.nome }}', margin, yPos);
+        doc.text({{ ('Detalhamento: ' ~ r.nome)|tojson }}, margin, yPos);
         yPos += 6;
 
         // Professores do recurso
