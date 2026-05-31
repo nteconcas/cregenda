@@ -237,7 +237,7 @@
 
 <!-- Modal para Detalhamento da Turma -->
 <div id="modalTurma" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden" onclick="fecharModal('modalTurma')">
-    <div class="bg-white rounded-xl shadow-2xl max-w-lg w-full mx-4 max-h-[80vh] overflow-y-auto" onclick="event.stopPropagation()">
+    <div class="bg-white rounded-xl shadow-2xl max-w-2xl w-full mx-4 max-h-[85vh] overflow-y-auto" onclick="event.stopPropagation()">
         <div class="p-6 border-b border-gray-100 flex justify-between items-center">
             <h3 class="font-bold text-lg text-gray-800 flex items-center gap-2">
                 <i class="fas fa-users text-indigo-500"></i>
@@ -256,20 +256,7 @@
                     <span class="font-bold text-indigo-600 ml-1" id="modalTurmaPct">0%</span>
                 </div>
             </div>
-            <h4 class="text-sm font-semibold text-gray-500 uppercase mb-3">Reservas por Recurso</h4>
-            <div class="overflow-hidden rounded-lg border">
-                <table class="w-full text-sm">
-                    <thead>
-                        <tr class="bg-gray-50 border-b">
-                            <th class="text-left p-2 font-semibold text-gray-600">Recurso</th>
-                            <th class="text-right p-2 font-semibold text-gray-600">Reservas</th>
-                            <th class="text-right p-2 font-semibold text-gray-600">%</th>
-                        </tr>
-                    </thead>
-                    <tbody id="modalTurmaBody">
-                    </tbody>
-                </table>
-            </div>
+            <div id="modalTurmaRecursos"></div>
         </div>
     </div>
 </div>
@@ -321,20 +308,70 @@
         document.getElementById('modalTurmaTotal').textContent = total;
         document.getElementById('modalTurmaPct').textContent = pct + '%';
         
-        const tbody = document.getElementById('modalTurmaBody');
-        tbody.innerHTML = '';
+        const container = document.getElementById('modalTurmaRecursos');
+        container.innerHTML = '';
         
         if (recursos && recursos.length > 0) {
             recursos.forEach(function(rec) {
-                const tr = document.createElement('tr');
-                tr.className = 'border-b last:border-0 hover:bg-gray-50';
-                tr.innerHTML = '<td class="p-2 text-gray-700">' + rec.nome + '</td>' +
-                               '<td class="p-2 text-right font-mono font-bold text-indigo-600">' + rec.total + '</td>' +
-                               '<td class="p-2 text-right font-mono text-gray-500">' + rec.pct + '%</td>';
-                tbody.appendChild(tr);
+                // Card do recurso
+                const card = document.createElement('div');
+                card.className = 'mb-4 border rounded-lg overflow-hidden';
+                
+                // Header do recurso
+                const header = document.createElement('div');
+                header.className = 'bg-indigo-50 px-4 py-2 flex justify-between items-center';
+                header.innerHTML = '<span class="font-semibold text-indigo-800">' + rec.nome + '</span>' +
+                                   '<span class="text-sm text-indigo-600">' + rec.total + ' reservas (' + rec.pct + '%)</span>';
+                card.appendChild(header);
+                
+                // Professores
+                if (rec.professores && rec.professores.length > 0) {
+                    const profDiv = document.createElement('div');
+                    profDiv.className = 'px-4 py-2 border-b';
+                    profDiv.innerHTML = '<div class="text-xs font-semibold text-orange-600 uppercase mb-1">Professores</div>';
+                    const profTable = document.createElement('table');
+                    profTable.className = 'w-full text-xs';
+                    profTable.innerHTML = '<thead><tr class="bg-orange-50"><th class="text-left p-1 font-medium">Nome</th><th class="text-right p-1 font-medium">Reservas</th><th class="text-right p-1 font-medium">%</th></tr></thead>';
+                    const profTbody = document.createElement('tbody');
+                    rec.professores.forEach(function(p) {
+                        const tr = document.createElement('tr');
+                        tr.className = 'border-b';
+                        tr.innerHTML = '<td class="p-1 text-gray-700">' + p.nome + '</td>' +
+                                       '<td class="p-1 text-right font-mono text-orange-600">' + p.total + '</td>' +
+                                       '<td class="p-1 text-right font-mono text-gray-500">' + p.pct + '%</td>';
+                        profTbody.appendChild(tr);
+                    });
+                    profTable.appendChild(profTbody);
+                    profDiv.appendChild(profTable);
+                    card.appendChild(profDiv);
+                }
+                
+                // Disciplinas
+                if (rec.disciplinas && rec.disciplinas.length > 0) {
+                    const discDiv = document.createElement('div');
+                    discDiv.className = 'px-4 py-2';
+                    discDiv.innerHTML = '<div class="text-xs font-semibold text-green-600 uppercase mb-1">Disciplinas</div>';
+                    const discTable = document.createElement('table');
+                    discTable.className = 'w-full text-xs';
+                    discTable.innerHTML = '<thead><tr class="bg-green-50"><th class="text-left p-1 font-medium">Nome</th><th class="text-right p-1 font-medium">Reservas</th><th class="text-right p-1 font-medium">%</th></tr></thead>';
+                    const discTbody = document.createElement('tbody');
+                    rec.disciplinas.forEach(function(d) {
+                        const tr = document.createElement('tr');
+                        tr.className = 'border-b';
+                        tr.innerHTML = '<td class="p-1 text-gray-700">' + d.nome + '</td>' +
+                                       '<td class="p-1 text-right font-mono text-green-600">' + d.total + '</td>' +
+                                       '<td class="p-1 text-right font-mono text-gray-500">' + d.pct + '%</td>';
+                        discTbody.appendChild(tr);
+                    });
+                    discTable.appendChild(discTbody);
+                    discDiv.appendChild(discTable);
+                    card.appendChild(discDiv);
+                }
+                
+                container.appendChild(card);
             });
         } else {
-            tbody.innerHTML = '<tr><td colspan="3" class="p-4 text-center text-gray-400 italic">Sem dados no período</td></tr>';
+            container.innerHTML = '<p class="text-center text-gray-400 italic py-4">Sem dados no período</p>';
         }
         
         abrirModal('modalTurma');

@@ -1113,7 +1113,49 @@ def metricas():
         for rec_nome, rec_total in turma_recursos:
             possib = possibilidade_por_recurso.get(rec_nome, 0)
             rec_pct = round((rec_total / possib * 100), 1) if possib > 0 else 0
-            turma_recursos_pct.append({'nome': rec_nome, 'total': rec_total, 'pct': rec_pct})
+            
+            # Professores que usaram este recurso para esta turma
+            profs_no_recurso = Reserva.query.join(Usuario).join(Recurso).join(Turma).filter(
+                Turma.nome == nome,
+                Recurso.nome == rec_nome,
+                Recurso.escola_id == current_user.escola_id,
+                Reserva.data >= data_inicio,
+                Reserva.data <= data_fim,
+                Reserva.status.notin_(['cancelada', 'nao_realizada'])
+            ).with_entities(
+                Usuario.nome, func.count(Reserva.id)
+            ).group_by(Usuario.nome).order_by(desc(func.count(Reserva.id))).all()
+            
+            profs_list = []
+            for p_nome, p_total in profs_no_recurso:
+                p_pct = round((p_total / possib * 100), 1) if possib > 0 else 0
+                profs_list.append({'nome': p_nome, 'total': p_total, 'pct': p_pct})
+            
+            # Disciplinas usadas neste recurso para esta turma
+            discs_no_recurso = Reserva.query.join(Disciplina).join(Recurso).join(Turma).filter(
+                Turma.nome == nome,
+                Recurso.nome == rec_nome,
+                Recurso.escola_id == current_user.escola_id,
+                Reserva.data >= data_inicio,
+                Reserva.data <= data_fim,
+                Reserva.status.notin_(['cancelada', 'nao_realizada']),
+                Reserva.disciplina_id != None
+            ).with_entities(
+                Disciplina.nome, func.count(Reserva.id)
+            ).group_by(Disciplina.nome).order_by(desc(func.count(Reserva.id))).all()
+            
+            discs_list = []
+            for d_nome, d_total in discs_no_recurso:
+                d_pct = round((d_total / possib * 100), 1) if possib > 0 else 0
+                discs_list.append({'nome': d_nome, 'total': d_total, 'pct': d_pct})
+            
+            turma_recursos_pct.append({
+                'nome': rec_nome,
+                'total': rec_total,
+                'pct': rec_pct,
+                'professores': profs_list,
+                'disciplinas': discs_list
+            })
         
         top_turmas_com_pct.append({
             'nome': nome,
