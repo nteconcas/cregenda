@@ -340,6 +340,11 @@ def relatorio_escola(id):
     num_recursos = len(recursos)
     capacidade_por_recurso = round(total_slots_periodo / num_recursos, 1) if num_recursos > 0 else 0
     
+    # Construir lookup de possibilidade_agendamento por nome do recurso
+    possibilidade_por_recurso = {}
+    for r in metricas_recursos:
+        possibilidade_por_recurso[r['nome']] = r['possibilidade_agendamento']
+    
     # Professores Mais Ativos (com detalhamento por recurso)
     professores_top = db.session.query(
         Usuario.nome, func.count(Reserva.id).label('total')
@@ -368,7 +373,8 @@ def relatorio_escola(id):
         
         prof_recursos_pct = []
         for rec_nome, rec_total in prof_recursos:
-            rec_pct = round((rec_total / total * 100), 1) if total > 0 else 0
+            possib = possibilidade_por_recurso.get(rec_nome, 0)
+            rec_pct = round((rec_total / possib * 100), 1) if possib > 0 else 0
             prof_recursos_pct.append({'nome': rec_nome, 'total': rec_total, 'pct': rec_pct})
         
         professores_top_com_pct.append({
@@ -422,7 +428,8 @@ def relatorio_escola(id):
         
         turma_recursos_pct = []
         for rec_nome, rec_total in turma_recursos:
-            rec_pct = round((rec_total / total * 100), 1) if total > 0 else 0
+            possib = possibilidade_por_recurso.get(rec_nome, 0)
+            rec_pct = round((rec_total / possib * 100), 1) if possib > 0 else 0
             turma_recursos_pct.append({'nome': rec_nome, 'total': rec_total, 'pct': rec_pct})
         
         top_turmas_com_pct.append({

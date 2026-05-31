@@ -1050,6 +1050,11 @@ def metricas():
     # Capacidade por recurso (total_possiveis dividido pela quantidade de recursos)
     capacidade_por_recurso = round(total_possiveis / num_recursos, 1) if num_recursos > 0 else 0
     
+    # Construir lookup de possibilidade_agendamento por nome do recurso
+    possibilidade_por_recurso = {}
+    for r in metricas_recursos:
+        possibilidade_por_recurso[r['nome']] = r['possibilidade_agendamento']
+    
     # 5. Top 10 Professores (com detalhamento por recurso)
     top_professores = query_base.join(Usuario).with_entities(
         Usuario.nome, func.count(Reserva.id)
@@ -1073,7 +1078,8 @@ def metricas():
         
         prof_recursos_pct = []
         for rec_nome, rec_total in prof_recursos:
-            rec_pct = round((rec_total / total * 100), 1) if total > 0 else 0
+            possib = possibilidade_por_recurso.get(rec_nome, 0)
+            rec_pct = round((rec_total / possib * 100), 1) if possib > 0 else 0
             prof_recursos_pct.append({'nome': rec_nome, 'total': rec_total, 'pct': rec_pct})
         
         top_professores_com_pct.append({
@@ -1105,7 +1111,8 @@ def metricas():
         
         turma_recursos_pct = []
         for rec_nome, rec_total in turma_recursos:
-            rec_pct = round((rec_total / total * 100), 1) if total > 0 else 0
+            possib = possibilidade_por_recurso.get(rec_nome, 0)
+            rec_pct = round((rec_total / possib * 100), 1) if possib > 0 else 0
             turma_recursos_pct.append({'nome': rec_nome, 'total': rec_total, 'pct': rec_pct})
         
         top_turmas_com_pct.append({
