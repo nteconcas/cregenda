@@ -662,26 +662,27 @@
     yPos += 6;
 
     const profHeaders = ['Professor', 'Total', '% Geral'{% for r in metricas_recursos %}, '{{ r.nome }}'{% endfor %}];
+    const profData = {{ professores_top|tojson }};
+    const profRecursosNomes = {{ metricas_recursos|map(attribute='nome')|list|tojson }};
     const profRows = [];
-    {% for prof in professores_top %}
-    profRows.push([
-        '{{ prof.nome }}',
-        '{{ prof.total }}',
-        '{{ prof.pct }}%',
-        {% for r in metricas_recursos %}
-        {% set ns = namespace(found=false) %}
-        {% for rec in prof.recursos %}
-        {% if rec.nome == r.nome %}
-        {% set ns.found = true %}
-        '{{ rec.total }}({{ rec.pct }}%)',
-        {% endif %}
-        {% endfor %}
-        {% if not ns.found %}
-        '-',
-        {% endif %}
-        {% endfor %}
-    ]);
-    {% endfor %}
+    profData.forEach(function(prof) {
+        var row = [prof.nome, prof.total, prof.pct + '%'];
+        profRecursosNomes.forEach(function(rNome) {
+            var found = false;
+            if (prof.recursos) {
+                prof.recursos.forEach(function(rec) {
+                    if (rec.nome === rNome) {
+                        row.push(rec.total + '(' + rec.pct + '%)');
+                        found = true;
+                    }
+                });
+            }
+            if (!found) {
+                row.push('-');
+            }
+        });
+        profRows.push(row);
+    });
     yPos = addTableToPDF(profHeaders, profRows, yPos);
     yPos += 8;
 
