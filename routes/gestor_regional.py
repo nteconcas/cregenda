@@ -288,8 +288,8 @@ def relatorio_escola(id):
         if possibilidade_agendamento < 0:
             possibilidade_agendamento = 0
         
-        # % de agendamento (concretizadas / total_solicitado * 100)
-        pct_agendamento = round((concretizadas / total_solicitado * 100), 1) if total_solicitado > 0 else 0
+        # % de agendamento (concretizadas / possibilidade_agendamento * 100)
+        pct_agendamento = round((concretizadas / possibilidade_agendamento * 100), 1) if possibilidade_agendamento > 0 else 0
         
         # Top Professores por Recurso
         top_professores_recurso = Reserva.query.join(Usuario).filter(

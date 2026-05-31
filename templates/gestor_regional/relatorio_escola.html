@@ -152,42 +152,57 @@
             </div>
         </div>
 
-        <!-- Top Professores -->
-        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <!-- Top Professores Mais Ativos com detalhamento por recurso -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden lg:col-span-2">
             <div class="p-4 sm:p-6 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
                 <h3 class="font-bold text-gray-800 flex items-center gap-2 text-sm sm:text-base">
                     <i class="fas fa-chalkboard-teacher text-orange-500"></i> Professores Mais Ativos
                 </h3>
             </div>
-            <div class="p-3 sm:p-6">
+            <div class="p-3 sm:p-6 overflow-x-auto">
                 {% if professores_top %}
-                <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-gray-200" id="tabela-professores">
                     <thead>
                         <tr>
-                            <th class="px-2 sm:px-6 py-2 sm:py-3 text-left text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-wider">#</th>
-                            <th class="px-2 sm:px-6 py-2 sm:py-3 text-left text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-wider">Professor</th>
-                            <th class="px-2 sm:px-6 py-2 sm:py-3 text-right text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-wider">Reservas</th>
-                            <th class="px-2 sm:px-6 py-2 sm:py-3 text-right text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-wider">%</th>
+                            <th class="px-2 sm:px-4 py-2 sm:py-3 text-left text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-wider">#</th>
+                            <th class="px-2 sm:px-4 py-2 sm:py-3 text-left text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-wider">Professor</th>
+                            <th class="px-2 sm:px-4 py-2 sm:py-3 text-right text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
+                            <th class="px-2 sm:px-4 py-2 sm:py-3 text-right text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-wider">% Geral</th>
+                            {% for r in metricas_recursos %}
+                            <th class="px-2 sm:px-4 py-2 sm:py-3 text-center text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[90px]">{{ r.nome }}</th>
+                            {% endfor %}
                         </tr>
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-200">
                         {% for prof in professores_top %}
                         <tr class="cursor-pointer hover:bg-orange-50 transition-colors" onclick="abrirModalProf('{{ prof.nome|e }}', {{ prof.total }}, '{{ prof.pct }}', {{ prof.recursos|tojson }})">
-                            <td class="px-2 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-500">{{ loop.index }}</td>
-                            <td class="px-2 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm font-medium text-gray-900 truncate max-w-[120px] sm:max-w-none hover:text-orange-600">
+                            <td class="px-2 sm:px-4 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-500">{{ loop.index }}</td>
+                            <td class="px-2 sm:px-4 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm font-medium text-gray-900 truncate max-w-[120px] sm:max-w-none hover:text-orange-600">
                                 <span class="flex items-center gap-2">
                                     <i class="fas fa-search text-xs text-gray-400"></i>
                                     {{ prof.nome }}
                                 </span>
                             </td>
-                            <td class="px-2 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-right font-bold text-orange-600">{{ prof.total }}</td>
-                            <td class="px-2 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-right text-gray-600">{{ prof.pct }}%</td>
+                            <td class="px-2 sm:px-4 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-right font-bold text-orange-600">{{ prof.total }}</td>
+                            <td class="px-2 sm:px-4 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-right text-gray-600">{{ prof.pct }}%</td>
+                            {% for r in metricas_recursos %}
+                            <td class="px-2 sm:px-4 py-2 sm:py-4 whitespace-nowrap text-center text-xs">
+                                {% set ns = namespace(found=false) %}
+                                {% for rec in prof.recursos %}
+                                    {% if rec.nome == r.nome %}
+                                        {% set ns.found = true %}
+                                        <span class="font-mono">{{ rec.total }} ({{ rec.pct }}%)</span>
+                                    {% endif %}
+                                {% endfor %}
+                                {% if not ns.found %}
+                                    <span class="text-gray-300">-</span>
+                                {% endif %}
+                            </td>
+                            {% endfor %}
                         </tr>
                         {% endfor %}
                     </tbody>
                 </table>
-                </div>
                 {% else %}
                 <p class="text-center text-gray-500 py-8">Nenhum dado disponível para o período.</p>
                 {% endif %}

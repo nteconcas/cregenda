@@ -125,25 +125,28 @@
 
 
     <!-- Tables Row -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 page-break-inside-avoid">
-        <!-- Top Professors -->
-        <div class="bg-white p-6 rounded-lg shadow">
+    <div class="grid grid-cols-1 gap-6 page-break-inside-avoid">
+        <!-- Top Professores Mais Ativos com detalhamento por recurso -->
+        <div class="bg-white p-6 rounded-lg shadow overflow-x-auto">
             <h3 class="font-bold text-lg mb-4 text-gray-800 flex items-center gap-2">
-                🏆 Top 10 Professores
+                🏆 Top 10 Professores Mais Ativos
             </h3>
             <div class="overflow-hidden rounded-lg border">
                 <table class="w-full text-sm">
                     <thead>
                         <tr class="bg-gray-50 border-b">
                             <th class="text-left p-3 font-semibold text-gray-600">Professor</th>
-                            <th class="text-right p-3 font-semibold text-gray-600">Reservas</th>
-                            <th class="text-right p-3 font-semibold text-gray-600">%</th>
+                            <th class="text-right p-3 font-semibold text-gray-600">Total</th>
+                            <th class="text-right p-3 font-semibold text-gray-600">% Geral</th>
+                            {% for r in metricas_recursos %}
+                            <th class="text-center p-3 font-semibold text-gray-600 min-w-[100px]">{{ r.nome }}</th>
+                            {% endfor %}
                         </tr>
                     </thead>
                     <tbody>
                         {% for prof in top_professores %}
                         <tr class="border-b last:border-0 hover:bg-gray-50 cursor-pointer" onclick="abrirModalProf('{{ prof.nome|e }}', {{ prof.total }}, '{{ prof.pct }}', {{ prof.recursos|tojson }})">
-                            <td class="p-3 truncate max-w-[200px] hover:text-indigo-600" title="{{ prof.nome }}">
+                            <td class="p-3 font-medium text-gray-800 truncate max-w-[150px]" title="{{ prof.nome }}">
                                 <span class="flex items-center gap-2">
                                     <i class="fas fa-search text-xs text-gray-400"></i>
                                     {{ prof.nome }}
@@ -151,9 +154,23 @@
                             </td>
                             <td class="text-right p-3 font-mono font-bold text-primary">{{ prof.total }}</td>
                             <td class="text-right p-3 font-mono text-gray-600">{{ prof.pct }}%</td>
+                            {% for r in metricas_recursos %}
+                            <td class="text-center p-3">
+                                {% set ns = namespace(found=false) %}
+                                {% for rec in prof.recursos %}
+                                    {% if rec.nome == r.nome %}
+                                        {% set ns.found = true %}
+                                        <span class="font-mono text-xs">{{ rec.total }} ({{ rec.pct }}%)</span>
+                                    {% endif %}
+                                {% endfor %}
+                                {% if not ns.found %}
+                                    <span class="text-gray-300 text-xs">-</span>
+                                {% endif %}
+                            </td>
+                            {% endfor %}
                         </tr>
                         {% else %}
-                        <tr><td colspan="3" class="p-4 text-center text-gray-500 italic">Sem dados no período</td></tr>
+                        <tr><td colspan="{{ 3 + metricas_recursos|length }}" class="p-4 text-center text-gray-500 italic">Sem dados no período</td></tr>
                         {% endfor %}
                     </tbody>
                 </table>
