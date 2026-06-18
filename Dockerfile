@@ -27,7 +27,10 @@ EXPOSE 80
 # A rota /health responde instantaneamente, evitando crash loop por health check.
 # A inicialização do banco (tabelas, admin, schema) é feita de forma lazy
 # ou manualmente via init_app.py em outro momento.
-CMD gunicorn -w 1 -b 0.0.0.0:${PORT:-80} \
+# Primeiro inicializa o banco de dados (uma única vez)
+# Depois inicia o Gunicorn com 1 worker e timeout aumentado
+CMD python init_app.py && \
+    gunicorn -w 1 -b 0.0.0.0:${PORT:-80} \
     --timeout 120 \
     --keep-alive 5 \
     --access-logfile - \
