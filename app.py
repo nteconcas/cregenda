@@ -1,4 +1,4 @@
-from flask import Flask, redirect, url_for, request, g
+from flask import Flask, redirect, url_for, request
 from flask_login import LoginManager, current_user
 from config import Config
 from models import db, Usuario
@@ -26,13 +26,6 @@ def create_app():
     
     # Configura ProxyFix para lidar corretamente com headers X-Forwarded-* (HTTPS, Host, etc)
     app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1)
-
-    # Log para confirmar qual banco está sendo usado (sem mostrar senha)
-    db_url = app.config.get('SQLALCHEMY_DATABASE_URI', '')
-    if 'sqlite' in db_url:
-        print("AVISO: Usando banco de dados SQLite Local. Verifique se DATABASE_URL está configurada.")
-    else:
-        print("OK: Usando banco de dados externo/producao.")
 
     db.init_app(app)
     
@@ -64,13 +57,6 @@ def create_app():
     app.register_blueprint(gestor_regional, url_prefix='/gestor_regional')
     app.register_blueprint(gestor_escolar, url_prefix='/gestor_escolar')
     app.register_blueprint(professor, url_prefix='/professor')
-
-    # Hook para logar todas as requisições
-    @app.before_request
-    def log_request_info():
-        # Apenas logar se não for static
-        if not request.path.startswith('/static'):
-            print(f"Request: {request.method} {request.url}")
 
     # Rota de health check - responde IMEDIATAMENTE sem precisar de banco
     @app.route('/health')
