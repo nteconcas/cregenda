@@ -23,17 +23,14 @@ RUN mkdir -p instance
 EXPOSE 80
 
 # Command to run the application
-# 1. Primeiro executa a inicialização do banco (tabelas, admin, schema) em processo separado
-# 2. Depois inicia o Gunicorn (que NÃO faz nenhuma operação de banco na inicialização)
-# 
-# O uso de '&&' garante que o Gunicorn só inicia se a inicialização do banco for bem-sucedida.
-# O health check da plataforma vai bater na rota /health que responde instantaneamente.
-CMD python init_app.py && \
-    echo "Iniciando Gunicorn..." && \
-    gunicorn -w 4 -b 0.0.0.0:${PORT:-80} \
-        --timeout 120 \
-        --keep-alive 5 \
-        --access-logfile - \
-        --error-logfile - \
-        --log-level info \
-        wsgi:app
+# O Gunicorn inicia IMEDIATAMENTE sem esperar inicialização do banco.
+# A rota /health responde instantaneamente, evitando crash loop por health check.
+# A inicialização do banco (tabelas, admin, schema) é feita de forma lazy
+# ou manualmente via init_app.py em outro momento.
+CMD gunicorn -w 4 -b 0.0.0.0:${PORT:-80} \
+    --timeout 120 \
+    --keep-alive 5 \
+    --access-logfile - \
+    --error-logfile - \
+    --log-level info \
+    wsgi:app

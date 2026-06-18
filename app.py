@@ -4,7 +4,10 @@ from config import Config
 from models import db, Usuario
 from extensions import oauth
 from werkzeug.middleware.proxy_fix import ProxyFix
+from werkzeug.security import generate_password_hash
+from sqlalchemy import text
 import os
+import threading
 from dotenv import load_dotenv
 import pymysql
 
@@ -19,6 +22,62 @@ from routes.gestor_geral import gestor_geral
 from routes.gestor_regional import gestor_regional
 from routes.gestor_escolar import gestor_escolar
 from routes.professor import professor
+
+# Flag para controlar se a inicialização do banco já foi feita
+_db_initialized = False
+_db_init_lock = threading.Lock()
+
+def initialize_database(app):
+    """Inicializa o banco de dados (tabelas, admin, schema).
+    Esta função é thread-safe e só executa uma vez."""
+    global _db_initialized
+    
+    if _db_initialized:
+        return True
+    
+    with _db_init_lock:
+        if _db_initialized:
+            return True
+        
+        try:
+            with app.app_context():
+                # 1. Cria as tabelas
+                db.create_all()
+                print("✅ Tabelas verificadas/criadas.")
+                
+                # 2. Cria admin se não existir
+                admin_email = 'admin_cre@example.com'
+                existing_admin = Usuario.query.filter_by(email=admin_email).first()
+                if not existing_admin:
+                    admin = Usuario(
+                        nome='Admin CRE',
+                        email=admin_email,
+                        senha=generate_password_hash('cre_admin'),
+                        papel='gestor_geral'
+                    )
+                    db.session.add(admin)
+                    db.session.commit()
+                    print("✅ Usuário admin criado com sucesso!")
+                else:
+                    print("ℹ️ Usuário admin já existe.")
+                
+                # 3. Atualiza schema (MySQL)
+                db_url = app.config.get('SQLALCHEMY_DATABASE_URI', '')
+                if 'sqlite' not in db_url:
+                    try:
+                        db.session.execute(text("ALTER TABLE blocos_aula MODIFY COLUMN periodo VARCHAR(50)"))
+                        db.session.commit()
+                        print("✅ Schema atualizado com sucesso!")
+                    except Exception:
+                        db.session.rollback()
+                        print("ℹ️ Schema já atualizado.")
+                
+                _db_initialized = True
+                print("✅ Inicialização do banco concluída!")
+                return True
+        except Exception as e:
+            print(f"⚠️ Erro na inicialização do banco: {e}")
+            return False
 
 def create_app():
     app = Flask(__name__)
@@ -62,6 +121,15 @@ def create_app():
     @app.route('/health')
     def health_check():
         return "OK", 200
+
+    # Rota para inicializar o banco (pode ser chamada manualmente via curl)
+    @app.route('/init-db')
+    def init_db_route():
+        success = initialize_database(app)
+        if success:
+            return "Banco de dados inicializado com sucesso!", 200
+        else:
+            return "Erro ao inicializar banco de dados. Verifique os logs.", 500
 
     @app.route('/dashboard')
     def dashboard():
