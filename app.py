@@ -111,34 +111,12 @@ def create_app():
         print(f"404 Error na URL: {request.url}")
         return "Página não encontrada (404). Verifique a URL.", 404
 
-    # Criação do usuário admin
+    # Cria as tabelas se não existirem (apenas na inicialização)
     with app.app_context():
-        db.create_all()
-        
-        # Verifica se o usuário admin já existe antes de tentar criar
-        # admin_email = 'admin_cre@example.com'
-        # try:
-        #     # Tenta buscar o usuário primeiro
-        #     existing_admin = Usuario.query.filter_by(email=admin_email).first()
-        #     
-        #     if not existing_admin:
-        #         admin = Usuario(
-        #             nome='Admin CRE',
-        #             email=admin_email,
-        #             senha=generate_password_hash('cre_admin'), # Usa método padrão seguro
-        #             papel='gestor_geral'
-        #         )
-        #         db.session.add(admin)
-        #         db.session.commit()
-        #         print("✅ Usuário admin criado.")
-        #     else:
-        #         # Atualiza a senha para garantir acesso se o usuário já existir
-        #         # existing_admin.senha = generate_password_hash('cre_admin')
-        #         # db.session.commit()
-        #         print("✅ Usuário admin já existe. Senha redefinida para 'cre_admin'.")
-        #         
-        # except Exception as e:
-        #     db.session.rollback()
-        #     print(f"ℹ️ Admin já existe (concorrência tratada): {e}")
+        try:
+            db.create_all()
+            print("✅ Tabelas verificadas/criadas com sucesso.")
+        except Exception as e:
+            print(f"⚠️ Erro ao criar/verificar tabelas: {e}")
 
     return app
