@@ -1,0 +1,20 @@
+version: '3.8'
+
+services:
+  cregenda:
+    build: .
+    container_name: cregenda
+    restart: always  # Reinicia automaticamente se cair
+    ports:
+      - "80:80"        # Mapeia porta 80 do host para porta 80 do container
+    environment:
+      - FLASK_APP=app
+      - FLASK_ENV=production
+    env_file:
+      - .env           # Usa o seu arquivo .env com variáveis de ambiente
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 30s    # Verifica a saúde a cada 30 segundos
+      timeout: 10s     # Timeout de 10 segundos por verificação
+      retries: 3       # Tenta 3 vezes antes de marcar como não saudável
+      start_period: 60s # Espera 60 segundos ANTES de começar a verificar a saúde (RESOLVE O LOOP DE CRASH!)
