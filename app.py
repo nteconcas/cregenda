@@ -1,4 +1,4 @@
-from flask import Flask, redirect, url_for, request
+from flask import Flask, redirect, url_for, request, g
 from flask_login import LoginManager, current_user
 from config import Config
 from models import db, Usuario
@@ -25,7 +25,6 @@ def create_app():
     app.config.from_object(Config)
     
     # Configura ProxyFix para lidar corretamente com headers X-Forwarded-* (HTTPS, Host, etc)
-    # x_for=1, x_proto=1. Evitamos x_host=1 para não confiar cegamente se o proxy não enviar.
     app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1)
 
     # Log para confirmar qual banco está sendo usado (sem mostrar senha)
@@ -72,23 +71,18 @@ def create_app():
         # Apenas logar se não for static
         if not request.path.startswith('/static'):
             print(f"Request: {request.method} {request.url}")
-            print(f"Headers: {dict(request.headers)}")
 
-    # Rota central de dashboard
+    # Rota de health check - responde IMEDIATAMENTE sem precisar de banco
     @app.route('/health')
     def health_check():
         return "OK", 200
 
     @app.route('/dashboard')
-    # @login_required  <-- Removido temporariamente para evitar NameError se o import falhar, já temos verificação manual abaixo
     def dashboard():
-        print(f"Acessando dashboard. Usuário autenticado? {current_user.is_authenticated}") # DEBUG
         if not current_user.is_authenticated:
-            print("Redirecionando para login por falta de autenticação.") # DEBUG
             return redirect(url_for('auth.login'))
         
         papel = current_user.papel
-        print(f"Papel do usuário: {papel}") # DEBUG
         
         mapa = {
             'gestor_geral': 'gestor_geral.dashboard',
@@ -97,11 +91,8 @@ def create_app():
             'professor': 'professor.dashboard',
         }
         if papel in mapa:
-            target_url = url_for(mapa[papel])
-            print(f"Redirecionando para {mapa[papel]}: {target_url}") # DEBUG
-            return redirect(target_url)
+            return redirect(url_for(mapa[papel]))
             
-        print("Papel não mapeado. Redirecionando para login.") # DEBUG
         return redirect(url_for('auth.login'))
     
     # Rota de fallback para capturar 404 e logar

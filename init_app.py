@@ -1,6 +1,9 @@
 """
-Script único de inicialização da aplicação.
-Cria as tabelas, admin e atualiza o schema em uma única chamada do create_app().
+Script de inicialização do banco de dados.
+Executa APENAS a criação de tabelas, admin e atualização de schema.
+NÃO inicia o servidor Gunicorn - isso é feito separadamente.
+
+Este script DEVE ser executado antes do Gunicorn, em um processo separado.
 """
 from app import create_app
 from models import db, Usuario
@@ -9,8 +12,9 @@ from sqlalchemy import text
 import time
 import sys
 
-def init_app():
-    print("🚀 Inicializando aplicação...")
+def init_database():
+    """Inicializa o banco de dados: cria tabelas, admin e atualiza schema."""
+    print("🚀 Inicializando banco de dados...")
     
     # Tenta criar o app com retry para o banco de dados
     retries = 5
@@ -73,7 +77,7 @@ def init_app():
         except Exception as e:
             print(f"ℹ️ Atualização de schema pulada (pode ser normal): {e}")
         
-        print("✅ Inicialização concluída com sucesso!")
+        print("✅ Inicialização do banco concluída com sucesso!")
 
 if __name__ == "__main__":
-    init_app()
+    init_database()
