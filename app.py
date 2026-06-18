@@ -1,9 +1,8 @@
 from flask import Flask, redirect, url_for, request
-from flask_login import LoginManager, current_user, login_required
+from flask_login import LoginManager, current_user
 from config import Config
 from models import db, Usuario
 from extensions import oauth
-from werkzeug.security import generate_password_hash
 from werkzeug.middleware.proxy_fix import ProxyFix
 import os
 from dotenv import load_dotenv
@@ -110,13 +109,5 @@ def create_app():
     def page_not_found(e):
         print(f"404 Error na URL: {request.url}")
         return "Página não encontrada (404). Verifique a URL.", 404
-
-    # Cria as tabelas se não existirem (apenas na inicialização)
-    with app.app_context():
-        try:
-            db.create_all()
-            print("✅ Tabelas verificadas/criadas com sucesso.")
-        except Exception as e:
-            print(f"⚠️ Erro ao criar/verificar tabelas: {e}")
 
     return app

@@ -22,8 +22,6 @@ RUN mkdir -p instance
 # Expose port 80
 EXPOSE 80
 
-# Make entrypoint executable
-RUN chmod +x entrypoint.sh
-
-# Command to run the application using the entrypoint script
-CMD ["./entrypoint.sh"]
+# Command to run the application
+# Primeiro executa a inicialização (com tolerância a falhas), depois inicia o Gunicorn
+CMD python init_app.py; echo "Iniciando Gunicorn..."; gunicorn -w 4 -b 0.0.0.0:${PORT:-80} --timeout 120 --keep-alive 5 --access-logfile - --error-logfile - wsgi:app
